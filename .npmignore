@@ -1,0 +1,11 @@
+.git
+.github
+.temp
+docs
+docsData
+src
+test
+.gitignore
+ChannelTypeExamples.json
+dump.json
+fix-docgen.js
