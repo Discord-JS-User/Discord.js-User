@@ -123,7 +123,10 @@ class Client extends (EventEmitter as new () => TypedEmitter<GatewayEvents>) {
 	 * @param {ClientLoginOptions} options The options for the login
 	 * @returns {Client} The Client
 	 */
-	public login(token: string, sessionData: SessionData, options: ClientLoginOptions): Client {
+	// @ts-ignore
+	public login(token: string, sessionData: SessionData = {}, options: ClientLoginOptions = {}): Client {
+		if (!token) throw new Error("NO TOKEN SPECIFIED");
+
 		this.loginOptions = options;
 		this.Logger = new Logger(this.loginOptions.debug);
 
