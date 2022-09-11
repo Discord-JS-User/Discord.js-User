@@ -1,7 +1,6 @@
 import WebSocket from "ws";
 import { EventEmitter } from "node:events";
 import TypedEmitter from "typed-emitter";
-import { writeFileSync, readFileSync } from "node:fs";
 import { apiFetch, genGatewayURL, pack, unpack } from "./utils";
 import { APIFetchOptions, ClientLoginOptions, GatewayEventFormat, GatewayEvents, SessionData } from "./Types";
 import ClientUser from "./Classes/ClientUser";
@@ -211,14 +210,6 @@ class Client extends (EventEmitter as new () => TypedEmitter<GatewayEvents>) {
 							}
 							break;
 					}
-
-					writeFileSync(
-						`${process.cwd()}/dump.json`,
-						JSON.stringify({
-							...JSON.parse(readFileSync(`${process.cwd()}/dump.json`) as unknown as string),
-							[data.t]: data.d
-						})
-					);
 
 					if (data.t == "READY") {
 						if (this.recievedReady) break;
