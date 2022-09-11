@@ -188,7 +188,7 @@ class Client extends (EventEmitter as new () => TypedEmitter<GatewayEvents>) {
 								await new Promise(res => {
 									if (guild.channels && guild.channels.cache.length > 0) res(null);
 									const intervalID = setInterval(() => {
-										if (guild.channels?.cache.length > 0) {
+										if (guild.channels && guild.channels.cache.length > 0) {
 											clearInterval(intervalID);
 											res(intervalID);
 										}
