@@ -4,6 +4,7 @@ import PresenceGame from "./PresenceGame";
 
 export default class ClientUserPresence {
 	public client: Client;
+	public lastUpdate: number = 0;
 
 	/**
 	 * The Activites
@@ -52,14 +53,22 @@ export default class ClientUserPresence {
 	}
 
 	public updatePresence() {
-		this.client.sendMessage({
-			op: 3,
-			d: {
-				activities: this.activities.map(i => i.toJSON()),
-				afk: this.afk,
-				since: this.since,
-				status: this.status
-			}
-		});
+		console.log("Update Requested");
+		setTimeout(
+			() => {
+				console.log("Updating");
+				this.client.sendMessage({
+					op: 3,
+					d: {
+						activities: this.activities.map(i => i.toJSON()),
+						afk: this.afk,
+						since: this.since,
+						status: this.status
+					}
+				});
+				this.lastUpdate = Date.now();
+			},
+			Date.now() - this.lastUpdate < 5000 ? Date.now() - this.lastUpdate : 0
+		);
 	}
 }

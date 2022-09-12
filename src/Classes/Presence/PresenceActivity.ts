@@ -77,9 +77,9 @@ class PresenceActivity {
 		// @ts-ignore
 		if (data.timestamps) {
 			// @ts-ignore
-			if (data.timestamps.start) data.timestamps.start = data.timestamps.start.getTime();
+			if (data.timestamps.start && typeof data.timestamps.start.getTime == "function") data.timestamps.start = data.timestamps.start.getTime();
 			// @ts-ignore
-			if (data.timestamps.end) data.timestamps.end = data.timestamps.end.getTime();
+			if (data.timestamps.end && typeof data.timestamps.end.getTime == "function") data.timestamps.end = data.timestamps.end.getTime();
 		}
 		return data;
 	}
