@@ -53,10 +53,10 @@ export default class ClientUserPresence {
 	}
 
 	public updatePresence() {
-		console.log("Update Requested");
+		this.client.Logger.log("Presence Update Requested");
 		setTimeout(
 			() => {
-				console.log("Updating");
+				this.client.Logger.log("Presence Updating");
 				this.client.sendMessage({
 					op: 3,
 					d: {
