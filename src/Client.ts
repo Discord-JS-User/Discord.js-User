@@ -14,6 +14,7 @@ import Logger from "./Logger";
  */
 class Client extends (EventEmitter as new () => TypedEmitter<GatewayEvents>) {
 	public Logger: Logger;
+	public closed: boolean = false;
 
 	// Client Options
 
@@ -108,7 +109,18 @@ class Client extends (EventEmitter as new () => TypedEmitter<GatewayEvents>) {
 	 * @param {GatewayEventFormat} data The data passed through
 	 * @returns {Client} The Client
 	 */
-	public sendMessage(data: GatewayEventFormat): Client {
+	public async sendMessage(data: GatewayEventFormat): Promise<Client> {
+		if (this.socket.readyState == WebSocket.CLOSING || this.socket.readyState == WebSocket.CLOSED) return this;
+		if (this.socket.readyState == WebSocket.CONNECTING) {
+			await new Promise(res => {
+				const IntervalID = setTimeout(() => {
+					if (this.socket.readyState === WebSocket.OPEN) {
+						clearInterval(IntervalID);
+						res(void null);
+					}
+				});
+			});
+		}
 		this.socket.send(pack(data, this.useEncryption), err => {
 			if (err) this.Logger.error(err);
 		});
@@ -151,13 +163,23 @@ class Client extends (EventEmitter as new () => TypedEmitter<GatewayEvents>) {
 		this.token = token;
 		this.socket = new WebSocket(this.gatewayURL);
 
-		this.socket.onopen = (openEvent: WebSocket.Event) => this.emit("open", openEvent);
+		this.socket.onopen = (openEvent: WebSocket.Event) => {
+			this.closed = false;
+			this.emit("open", openEvent);
+		};
 		this.socket.onclose = (closeEvent: WebSocket.CloseEvent) => {
-			if (closeEvent.code == 1) return;
+			if (this.closed) return;
+			else {
+				this.closed = true;
+			}
 			this.emit("close", closeEvent);
 			this.reconnect();
 		};
 		this.socket.onerror = async (error: WebSocket.ErrorEvent) => {
+			if (this.closed) return;
+			else {
+				this.closed = true;
+			}
 			this.emit("error", error);
 			this.Logger.error("Error Recieved, Waiting 3 Seconds To Reconnect");
 			await new Promise(res => setTimeout(res, 3000));
@@ -330,6 +352,7 @@ class Client extends (EventEmitter as new () => TypedEmitter<GatewayEvents>) {
 		this.sendMessage({ op: 1, d: this.seq });
 		this.last_heartbeat = Date.now();
 		setTimeout(() => {
+			if (this.closed) return;
 			if (this.last_heartbeat > this.last_heartbeat_ack) {
 				this.Logger.log("Failed To Recieve Heartbeat Ack");
 				this.reconnect();
@@ -350,6 +373,17 @@ class Client extends (EventEmitter as new () => TypedEmitter<GatewayEvents>) {
 	 */
 	public async apiFetch(path: string, data?: APIFetchOptions): Promise<any> {
 		return await apiFetch(this.token, path, data);
+	}
+
+	/**
+	 * Disconnects The Client
+	 */
+	public disconnect() {
+		this.Logger.log("Disconnecting Due To `disconnect()` Function Being Called");
+		this.closed = true;
+		this.clearBeater();
+		this.socket.close(1000);
+		this.emit("disconnect");
 	}
 }
 

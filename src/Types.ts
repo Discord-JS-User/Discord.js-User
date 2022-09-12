@@ -9,6 +9,23 @@ import GuildForumChannel from "./Classes/Channels/Specific/GuildForumChannel";
 import GuildMember from "./Classes/GuildMember";
 import ChannelMemberListManager from "./AppElements/MemberList/ChannelMemberListManager";
 
+export type GatewayEvents = {
+	/** The Client has opened the Gateway Connection */
+	open: (openEvent: WebSocket.Event) => void;
+	/** The Gateway Connection has been closed */
+	close: (closeEvent: WebSocket.CloseEvent) => void;
+	/** The Client has disconnected using the `disconnect()` function */
+	disconnect: () => void;
+	/** The Gateway Connection experienced an Error */
+	error: (error: WebSocket.ErrorEvent) => void;
+	/** (RAW DATA) The Gateway Connection recieved a message */
+	message: (data: any) => void;
+	/** The Client has recieved the READY event and is prepared to start operations */
+	ready: (readyData: Object) => void;
+	/** The memmber list of a guild has been updated (Passes an array of the updated channels) */
+	guild_member_list_update: (data: ChannelMemberListManager[]) => void;
+};
+
 export interface SessionData {
 	client_state: {
 		guild_hashes: Object;
@@ -122,15 +139,6 @@ export interface PresenceData {
 		url?: string;
 	}>;
 }
-
-export type GatewayEvents = {
-	open: (openEvent: WebSocket.Event) => void;
-	close: (closeEvent: WebSocket.CloseEvent) => void;
-	error: (error: WebSocket.ErrorEvent) => void;
-	message: (data: any) => void;
-	ready: (readyData: Object) => void;
-	guild_member_list_update: (data: ChannelMemberListManager[]) => void;
-};
 
 export type GuildFeature = "ANIMATED_BANNER" | "ANIMATED_ICON" | "AUTO_MODERATION" | "BANNER" | "COMMUNITY" | "DISCOVERABLE" | "FEATURABLE" | "INVITE_SPLASH" | "MEMBER_VERIFICATION_GATE_ENABLED" | "MONETIZATION_ENABLED" | "MORE_STICKERS" | "NEWS" | "PARTNERED" | "PREVIEW_ENABLED" | "PRIVATE_THREADS" | "ROLE_ICONS" | "TICKETED_EVENTS_ENABLED" | "VANITY_URL" | "VERIFIED" | "VIP_REGIONS" | "WELCOME_SCREEN_ENABLED";
 
