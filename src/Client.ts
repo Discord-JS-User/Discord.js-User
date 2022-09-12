@@ -350,6 +350,19 @@ class Client extends (EventEmitter as new () => TypedEmitter<GatewayEvents>) {
 	public async apiFetch(path: string, data?: APIFetchOptions): Promise<any> {
 		return await apiFetch(this.token, path, data);
 	}
+
+	/**
+	 * Close the connection
+	 */
+	public async disconnect() {
+		this.socket.close();
+		this.Logger.log("Disconnecting...");
+		await new Promise(res => setTimeout(res, 3000));
+		if (this.socket.readyState != WebSocket.CLOSED) {
+			this.Logger.log("Took Too Long To Disconnect, Terminating Connection...");
+			this.socket.terminate();
+		}
+	}
 }
 
 export default Client;
