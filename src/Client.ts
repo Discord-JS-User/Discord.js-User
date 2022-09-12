@@ -156,7 +156,13 @@ class Client extends (EventEmitter as new () => TypedEmitter<GatewayEvents>) {
 			this.emit("close", closeEvent);
 			this.reconnect();
 		};
-		this.socket.onerror = (error: WebSocket.ErrorEvent) => this.emit("error", error);
+		this.socket.onerror = async (error: WebSocket.ErrorEvent) => {
+			this.emit("error", error);
+			this.Logger.error("Error Recieved, Waiting 3 Seconds To Reconnect");
+			await new Promise(res => setTimeout(res, 3000));
+			this.Logger.error("Reconnecting");
+			this.reconnect();
+		};
 
 		this.socket.onmessage = async (event: WebSocket.MessageEvent) => {
 			const data: GatewayEventFormat = unpack(event.data, this.compressed, this.useEncryption);
