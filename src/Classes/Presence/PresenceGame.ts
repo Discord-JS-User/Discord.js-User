@@ -1,6 +1,4 @@
 import Client from "../../Client";
-import GuildMember from "../GuildMember";
-import GuildMemberPresence from "./GuildMemberPresence";
 import PresenceActivity from "./PresenceActivity";
 
 class PresenceGame extends PresenceActivity {

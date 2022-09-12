@@ -185,15 +185,7 @@ class Client extends (EventEmitter as new () => TypedEmitter<GatewayEvents>) {
 							this.memberList = new ClientMemberListManager(this);
 							this.guilds = new GuildManager(this, data.d.guilds);
 							for (const guild of this.guilds.cache) {
-								await new Promise(res => {
-									if (guild.channels && guild.channels.cache.length > 0) res(null);
-									const intervalID = setInterval(() => {
-										if (guild.channels && guild.channels.cache.length > 0) {
-											clearInterval(intervalID);
-											res(intervalID);
-										}
-									}, 50);
-								});
+								guild.channels.fetch();
 							}
 							break;
 						case "RESUMED":

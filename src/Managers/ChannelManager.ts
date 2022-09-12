@@ -16,15 +16,15 @@ class ChannelManager {
 	constructor(client: Client, guild: Guild) {
 		this.client = client;
 		this.guild = guild;
-
-		this.fetch();
 	}
 
 	public async fetch(id: string = null, force: boolean = false) {
 		if (id && !force) {
 			if (this.cache.find(i => i.id == id)) return this.cache.find(i => i.id == id);
 		}
+		console.log("BEGIN" + this.guild.name);
 		let fetchedData = await this.client.apiFetch(id ? `/channels/${id}` : `/guilds/${this.guild.id}/channels`);
+		console.log("END");
 		if (!fetchedData) return null;
 		if (!Array.isArray(fetchedData)) fetchedData = [fetchedData];
 		let data: Array<ChannelTypesEnum[keyof ChannelTypesEnum]> = fetchedData.map((c: any) => {

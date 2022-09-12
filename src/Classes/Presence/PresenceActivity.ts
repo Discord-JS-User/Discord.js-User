@@ -1,9 +1,6 @@
 import Client from "../../Client";
 import { ActivityEmoji, ActivityType } from "../../Types";
 import { fillClassValues } from "../../utils";
-import Guild from "../Guild";
-import GuildMember from "../GuildMember";
-import GuildMemberPresence from "./GuildMemberPresence";
 
 class PresenceActivity {
 	public client: Client;
@@ -51,10 +48,10 @@ class PresenceActivity {
 			timestamps: d => {
 				{
 					if (d) {
-						d.start = d.start ? new Date(d.start) : null;
-						d.end = d.end ? new Date(d.end) : null;
+						d.start = d.start ? new Date(d.start) : undefined;
+						d.end = d.end ? new Date(d.end) : undefined;
 						return d;
-					} else return null;
+					} else return undefined;
 				}
 			},
 			emoji: d => {
@@ -66,6 +63,25 @@ class PresenceActivity {
 			created_at: d => (d ? new Date(d) : d)
 		};
 		fillClassValues(this, data, aliases, parsers, ["member", "presence"]);
+	}
+
+	public toJSON() {
+		const properties = Object.keys(this).filter(i => i != "client" && i != "constructor" && i != "toJSON");
+		let data = {};
+		for (const property of properties) {
+			data[property] = this[property];
+		}
+		for (const property of Object.keys(data).filter(i => data[i] === undefined)) {
+			delete data[property];
+		}
+		// @ts-ignore
+		if (data.timestamps) {
+			// @ts-ignore
+			if (data.timestamps.start) data.timestamps.start = data.timestamps.start.getTime();
+			// @ts-ignore
+			if (data.timestamps.end) data.timestamps.end = data.timestamps.end.getTime();
+		}
+		return data;
 	}
 }
 

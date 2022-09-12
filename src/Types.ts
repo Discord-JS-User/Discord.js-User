@@ -37,6 +37,13 @@ export interface ClientLoginOptions {
 	debug: boolean;
 }
 
+export interface CustomStatus {
+	name?: string;
+	state: string;
+	emoji?: ActivityEmoji;
+	type?: number;
+}
+
 export type PresenceStatus = "online" | "offline" | "idle" | "dnd" | "invisible";
 
 export type GuildMemberListSyncItem = {} | {};
