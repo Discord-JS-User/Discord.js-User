@@ -1,6 +1,6 @@
 {
 	"name": "@derpdevs/discord.js-user",
-	"version": "1.0.18",
+	"version": "1.0.19",
 	"description": "",
 	"main": "dist/index.js",
 	"scripts": {
@@ -9,7 +9,7 @@
 		"build": "npm run pretty; echo 'Compiling TypeScript\n'; rm -rf ./dist; npx tsc",
 		"ci": "npm install; npm update; rm -rf ./node_modules; rm ./package-lock.json; npm install; echo '\nFixing Docgen'; node fix-docgen; echo '';",
 		"pretty": "echo 'Prettifying src'; npx prettier --write ./src/** --arrow-parens avoid --print-width 1000000 --tab-width 4 --trailing-comma none --use-tabs true --vue-indent-script-and-style true; echo '\nPrettifying Tests'; npx prettier --write ./test/**/* --arrow-parens avoid --print-width 1000000 --tab-width 4 --trailing-comma none --use-tabs true --vue-indent-script-and-style true; echo ''",
-		"docgen": "npm run pretty; echo 'Generating Doc Files\n'; npx docgen -i './src/**' --typescript true -o '../Discord.js User Docs/data/docs.json'; echo '';"
+		"docgen": "npm run pretty; echo 'Generating Doc Files\n'; npx docgen -i './src/**' --typescript true -o '../Docgen/docs.json'; echo '';"
 	},
 	"author": "",
 	"license": "ISC",
@@ -25,10 +25,7 @@
 		"@types/node": "^18.7.14",
 		"@types/node-fetch": "^2.6.2",
 		"@types/ws": "^8.5.3",
-		"ejs": "^3.1.8",
-		"glob": "^8.0.3",
 		"prettier": "^2.7.1",
-		"typescript": "^4.8.2",
-		"vuepress-cli": "^1.0.0-prealpha.8"
+		"typescript": "^4.8.2"
 	}
 }
