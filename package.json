@@ -7,7 +7,7 @@
 		"test": "npm run build; echo 'Running Test\n\n'; node test/index.test.js",
 		"quickTest": "node test/index.test.js",
 		"build": "npm run pretty; echo 'Compiling TypeScript\n'; rm -rf ./dist; npx tsc",
-		"ci": "rm -rf ./node_modules; rm ./package-lock.json; rm ./yarn.lock; yarn; rm ./yarn.lock; npm i; echo '\nFixing Docgen'; node fix-docgen; echo '';",
+		"ci": "npm install; npm update; rm -rf ./node_modules; rm ./package-lock.json; npm install; echo '\nFixing Docgen'; node fix-docgen; echo '';",
 		"pretty": "echo 'Prettifying src'; npx prettier --write ./src/** --arrow-parens avoid --print-width 1000000 --tab-width 4 --trailing-comma none --use-tabs true --vue-indent-script-and-style true; echo '\nPrettifying Tests'; npx prettier --write ./test/**/* --arrow-parens avoid --print-width 1000000 --tab-width 4 --trailing-comma none --use-tabs true --vue-indent-script-and-style true; echo ''",
 		"docgen": "npm run pretty; echo 'Generating Doc Files\n'; npx docgen -i './src/**' --typescript true -o '../Discord.js User Docs/data/docs.json'; echo '';"
 	},

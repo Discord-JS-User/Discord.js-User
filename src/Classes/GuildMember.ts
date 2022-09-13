@@ -11,6 +11,7 @@ class GuildMember {
 	public user: User;
 
 	public id: string;
+	public displayName: string;
 	public username: string;
 	public nickname?: string;
 	public roles: Array<Role>;
@@ -52,7 +53,8 @@ class GuildMember {
 			hoistRole: () => this.roles.find(i => i.hoist),
 			presence: d => (d ? new GuildMemberPresence(this.client, this.guild, this, d) : d),
 			joined_at: d => new Date(d),
-			boosting_since: d => (d ? new Date(d) : null)
+			boosting_since: d => (d ? new Date(d) : null),
+			displayName: () => data.nick || data.user.username
 		};
 		fillClassValues(this, data, aliases, parsers);
 	}

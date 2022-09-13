@@ -20,6 +20,7 @@ class GuildChannel extends BaseChannel {
 	}
 
 	public async syncMemberList(rangeStart: number, rangeEnd: number, options: GuildMemberSyncOptions = {}) {
+		/*
 		this.memberList = this.guild.memberList.channels.find(i => i.id == this.id);
 		this.client.sendMessage({
 			op: 14,
@@ -39,6 +40,13 @@ class GuildChannel extends BaseChannel {
 			this.client.listeners("guild_member_list_update").find(i => i.toString() == "() => res(null)")
 		);
 		return this.client.memberList.guilds?.find(i => i.id == this.guild?.id)?.channels?.find(i => i.id == this.id);
+		*/
+		return await this.guild.members.syncMemberList(
+			{
+				[this.id]: [[rangeStart, rangeEnd]]
+			},
+			options
+		);
 	}
 }
 

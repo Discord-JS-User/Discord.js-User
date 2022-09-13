@@ -208,13 +208,13 @@ class Client extends (EventEmitter as new () => TypedEmitter<GatewayEvents>) {
 
 					switch (data.t.toUpperCase()) {
 						case "READY":
-							this.user = new ClientUser(this, data.d.user);
+							this.user = new ClientUser(this, data.d);
 							this.session_id = data.d.session_id;
 							this.gatewayURL = data.d.resume_gateway_url;
 							this.memberList = new ClientMemberListManager(this);
 							this.guilds = new GuildManager(this, data.d.guilds);
 							for (const guild of this.guilds.cache) {
-								guild.channels.fetch();
+								await guild.channels.fetch();
 							}
 							break;
 						case "RESUMED":
