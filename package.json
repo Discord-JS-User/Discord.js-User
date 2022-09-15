@@ -1,6 +1,6 @@
 {
 	"name": "@derpdevs/discord.js-user",
-	"version": "1.0.19",
+	"version": "1.1.0",
 	"description": "",
 	"main": "dist/index.js",
 	"scripts": {
@@ -9,14 +9,14 @@
 		"build": "npm run pretty; echo 'Compiling TypeScript\n'; rm -rf ./dist; npx tsc",
 		"ci": "npm install; npm update; rm -rf ./node_modules; rm ./package-lock.json; npm install; echo '\nFixing Docgen'; node fix-docgen; echo '';",
 		"pretty": "echo 'Prettifying src'; npx prettier --write ./src/** --arrow-parens avoid --print-width 1000000 --tab-width 4 --trailing-comma none --use-tabs true --vue-indent-script-and-style true; echo '\nPrettifying Tests'; npx prettier --write ./test/**/* --arrow-parens avoid --print-width 1000000 --tab-width 4 --trailing-comma none --use-tabs true --vue-indent-script-and-style true; echo ''",
-		"docgen": "npm run pretty; echo 'Generating Doc Files\n'; npx docgen -i './src/**' --typescript true -o '../Docgen/docs.json'; echo '';"
+		"docgen": "npm run build; echo 'Generating Doc Files\n'; npx docgen -i './src/**' --typescript true -o '../Discord.js User Docs/data/docs.json'; echo '';"
 	},
 	"author": "",
 	"license": "ISC",
 	"dependencies": {
-		"chalk": "^4.1.2",
+		"bufferutil": "^4.0.6",
 		"node-fetch": "^2.6.7",
-		"typed-emitter": "^2.1.0",
+		"utf-8-validate": "^5.0.9",
 		"ws": "^8.8.1"
 	},
 	"devDependencies": {

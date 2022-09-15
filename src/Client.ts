@@ -1,8 +1,9 @@
 import WebSocket from "ws";
 import { EventEmitter } from "node:events";
-import TypedEmitter from "typed-emitter";
-import { apiFetch, genGatewayURL, pack, unpack } from "./utils";
-import { APIFetchOptions, ClientLoginOptions, GatewayEventFormat, GatewayEvents, SessionData } from "./Types";
+import TypedEmitter from "./Native Modules/TypedEmitter";
+import { apiFetch, genGatewayURL } from "./utils";
+import { APIFetchOptions, ClientLoginOptions, GatewayEventFormat, SessionData, ClientOptions } from "./Types";
+import GatewayEvents from "./GatewayEvents";
 import ClientUser from "./Classes/ClientUser";
 import ClientMemberListManager from "./AppElements/MemberList/ClientMemberListManager";
 import GuildManager from "./Managers/GuildManager";
@@ -13,8 +14,24 @@ import Logger from "./Logger";
  * @extends {EventEmitter}
  */
 class Client extends (EventEmitter as new () => TypedEmitter<GatewayEvents>) {
+	/**
+	 * Options from the client creation
+	 */
+	public options: ClientOptions;
+	/**
+	 * Raw Data from the Ready Event
+	 */
+	public readyData: any;
+	/**
+	 * The Logger for the client
+	 * (Only works if debug is enabled)
+	 */
 	public Logger: Logger;
-	public closed: boolean = false;
+	/**
+	 * Whether the client was manually closed using `disconnect()`
+	 * Used to make sure the client does not send the close event and reconnect
+	 */
+	private closed: boolean = false;
 
 	// Client Options
 
@@ -24,13 +41,37 @@ class Client extends (EventEmitter as new () => TypedEmitter<GatewayEvents>) {
 	public loginOptions: ClientLoginOptions;
 
 	/**
-	 * Whether the connection is compressed
+	 * The client compressor (zlib-sync or none `(data) => data`)
 	 */
-	public compressed: boolean = false;
+	public compressor: {
+		inflate?: any;
+		func: (...args: any[]) => any;
+		enabled: boolean;
+	} = {
+		func: (data: any) => data,
+		enabled: false
+	};
 	/**
-	 * Whether the connection is encrypted
+	 * The client encryptor (JSON or erlpack)
 	 */
-	public useEncryption: boolean = false;
+	public encryptor: {
+		pack: (...args: any) => any;
+		unpack: (...args: any[]) => any;
+		enabled: boolean;
+	} = {
+		pack: JSON.stringify,
+		unpack: JSON.parse,
+		enabled: false
+	};
+
+	/**
+	 * The Client Data Encoder
+	 */
+	public encode: (data: GatewayEventFormat) => any;
+	/**
+	 * The Client Data Decoder
+	 */
+	public decode: (data: any) => GatewayEventFormat;
 
 	// Gateway Items
 	/**
@@ -97,10 +138,13 @@ class Client extends (EventEmitter as new () => TypedEmitter<GatewayEvents>) {
 	/**
 	 * Create the client
 	 */
-	constructor() {
+	constructor(options: ClientOptions = {}) {
 		super();
-		this.setMaxListeners(25);
+		this.options = options;
+		this.Logger = new Logger(this.options.debug);
 		this.removeAllListeners();
+		this.setMaxListeners(25);
+		this.setupParsing();
 	}
 
 	/**
@@ -121,10 +165,65 @@ class Client extends (EventEmitter as new () => TypedEmitter<GatewayEvents>) {
 				});
 			});
 		}
-		this.socket.send(pack(data, this.useEncryption), err => {
+		this.socket.send(this.encode(data), err => {
 			if (err) this.Logger.error(err);
 		});
 		return this;
+	}
+
+	/**
+	 * Setup the data parsing for the Gateway
+	 */
+	private setupParsing() {
+		try {
+			const erlpack = require("erlpack");
+			this.encryptor = {
+				pack: erlpack.pack,
+				unpack: (data: any): GatewayEventFormat => {
+					if (!Buffer.isBuffer(data)) data = Buffer.from(new Uint8Array(data));
+					return erlpack.unpack(data);
+				},
+				enabled: true
+			};
+		} catch {
+			this.encryptor = {
+				pack: JSON.stringify,
+				unpack: (data: string): GatewayEventFormat => {
+					if (typeof data !== "string") data = new TextDecoder().decode(data);
+					return JSON.parse(data);
+				},
+				enabled: false
+			};
+		}
+
+		try {
+			const zlib = require("zlib-sync");
+			const inflate = new zlib.Inflate({
+				chunkSize: 65535,
+				flush: zlib.Z_SYNC_FLUSH,
+				to: this.encryptor.enabled ? "" : "string"
+			});
+			this.compressor = {
+				inflate: inflate,
+				func: (data: any) => {
+					const l = data.length;
+					this.compressor.inflate.push(data, l >= 4 && data[l - 4] === 0x00 && data[l - 3] === 0x00 && data[l - 2] === 0xff && data[l - 1] === 0xff && zlib.Z_SYNC_FLUSH);
+					return this.compressor.inflate.result;
+				},
+				enabled: true
+			};
+		} catch {
+			this.compressor = {
+				func: data => data,
+				enabled: false
+			};
+		}
+
+		this.encode = (data: GatewayEventFormat) => this.encryptor.pack(data);
+		this.decode = (data: any) => this.encryptor.unpack(this.compressor.func(data));
+
+		this.Logger.log(`Compression ${this.compressor.enabled ? "Enabled" : "Disabled"}`);
+		this.Logger.log(`Encryption ${this.encryptor.enabled ? "Enabled" : "Disabled"}`);
 	}
 
 	/**
@@ -134,30 +233,42 @@ class Client extends (EventEmitter as new () => TypedEmitter<GatewayEvents>) {
 	 * @param {ClientLoginOptions} options The options for the login
 	 * @returns {Client} The Client
 	 */
-	// @ts-ignore
-	public login(token: string, sessionData: SessionData = {}, options: ClientLoginOptions = {}): Client {
+	public login(
+		token: string,
+		sessionData: SessionData = {
+			client_state: {
+				guild_hashes: {},
+				highest_last_message_id: "0",
+				read_state_version: 0,
+				user_guild_settings_version: -1,
+				user_settings_version: -1
+			},
+			properties: {
+				os: "Windows",
+				browser: "Discord Desktop",
+				release_channel: "stable",
+				system_locale: "en-US"
+			},
+			presence: {
+				activities: [],
+				afk: false,
+				since: 0,
+				status: "online"
+			}
+		},
+		options: ClientLoginOptions = {}
+	): Client {
 		if (!token) throw new Error("NO TOKEN SPECIFIED");
 
 		this.loginOptions = options;
-		this.Logger = new Logger(this.loginOptions.debug);
-
-		try {
-			require("erlpack");
-			this.useEncryption = true;
-		} catch {}
-
-		try {
-			require("zlib-sync");
-			if (!this.useEncryption) this.compressed = true;
-		} catch {}
 
 		this.gatewayURL = genGatewayURL("wss://gateway.discord.gg", {
 			v: "10",
-			encoding: this.useEncryption ? "etf" : "json",
-			...(this.compressed ? { compress: "zlib-stream" } : {})
+			encoding: this.encryptor.enabled ? "etf" : "json",
+			...(this.compressor.enabled ? { compress: "zlib-stream" } : {})
 		});
 
-		this.Logger.log(this.gatewayURL);
+		this.Logger.log("Gateway URL: " + this.gatewayURL);
 
 		this.sessionData = sessionData;
 		this.token = token;
@@ -176,6 +287,7 @@ class Client extends (EventEmitter as new () => TypedEmitter<GatewayEvents>) {
 			this.reconnect();
 		};
 		this.socket.onerror = async (error: WebSocket.ErrorEvent) => {
+			this.Logger.error("\n\n\nGateway Error Recieved:\n\n", error, "\n\n\n");
 			if (this.closed) return;
 			else {
 				this.closed = true;
@@ -188,7 +300,7 @@ class Client extends (EventEmitter as new () => TypedEmitter<GatewayEvents>) {
 		};
 
 		this.socket.onmessage = async (event: WebSocket.MessageEvent) => {
-			const data: GatewayEventFormat = unpack(event.data, this.compressed, this.useEncryption);
+			const data: GatewayEventFormat = this.decode(event.data);
 			this.emit("message", data);
 
 			if (data.s) this.seq = data.s;
@@ -208,6 +320,7 @@ class Client extends (EventEmitter as new () => TypedEmitter<GatewayEvents>) {
 
 					switch (data.t.toUpperCase()) {
 						case "READY":
+							this.readyData = data.d;
 							this.user = new ClientUser(this, data.d);
 							this.session_id = data.d.session_id;
 							this.gatewayURL = data.d.resume_gateway_url;
@@ -230,6 +343,9 @@ class Client extends (EventEmitter as new () => TypedEmitter<GatewayEvents>) {
 									eventData.push(...this.memberList.guilds.find(i => i.id == op.guild_id).channels.filter(i => i.list_id == op.id));
 								}
 							}
+							break;
+						case "SESSIONS_REPLACE":
+							eventData = this.user.sessions._update(data.d);
 							break;
 					}
 

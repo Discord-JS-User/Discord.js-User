@@ -32,7 +32,7 @@ class GuildMemberManager {
 			"guild_member_list_update",
 			this.client.listeners("guild_member_list_update").find(i => i.toString() == "() => res(null)")
 		);
-		console.log("PUSHING");
+
 		const members: GuildMember[] = [];
 
 		for (const channel of this.client.memberList.guilds?.find(i => i.id == this.guild?.id).channels) {
@@ -45,7 +45,6 @@ class GuildMemberManager {
 
 		this.pushToCache(members);
 
-		console.log("DONE PUSHING");
 		return this.client.memberList.guilds?.find(i => i.id == this.guild?.id);
 	}
 

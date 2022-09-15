@@ -1,6 +1,6 @@
 import Client from "../../Client";
 import { CustomStatus, PresenceData, PresenceStatus } from "../../Types";
-import PresenceGame from "./PresenceGame";
+import PresenceActivity from "./PresenceActivity";
 
 export default class ClientUserPresence {
 	public client: Client;
@@ -9,7 +9,7 @@ export default class ClientUserPresence {
 	/**
 	 * The Activites
 	 */
-	public activities: PresenceGame[] = [];
+	public activities: PresenceActivity[] = [];
 	/**
 	 * AFK Or Not
 	 */
@@ -30,7 +30,7 @@ export default class ClientUserPresence {
 	public setActivity(data: PresenceData, clear: boolean = false) {
 		this.activities = this.activities.filter(i => i.name != data.name);
 		if (clear) return this.updatePresence();
-		this.activities.push(new PresenceGame(this.client, data));
+		this.activities.push(new PresenceActivity(this.client, data));
 		this.updatePresence();
 	}
 
@@ -48,7 +48,7 @@ export default class ClientUserPresence {
 		status.type = 4;
 		this.activities = this.activities.filter(i => i.name != status.name);
 		if (clear) return this.updatePresence();
-		this.activities.push(new PresenceGame(this.client, status));
+		this.activities.push(new PresenceActivity(this.client, status));
 		this.updatePresence();
 	}
 

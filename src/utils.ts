@@ -1,10 +1,16 @@
 import dirFetch, { RequestInfo, RequestInit, Response } from "node-fetch";
-import { APIFetchOptions, ChannelTypesEnum, GatewayEventFormat } from "./Types";
-import jsdiscordperms from "./Helpers/jsdiscordperms.js";
+import { APIFetchOptions, ChannelTypesEnum, FetchResponse } from "./Types";
+import jsdiscordperms from "./Native Modules/jsdiscordperms";
 
-export { jsdiscordperms, dirFetch, RequestInfo, RequestInit, Response, zlib, erlpack };
+export { jsdiscordperms, dirFetch, RequestInfo, RequestInit, Response };
 
-export function timeParse(ms: number, hideMs: boolean = false) {
+/**
+ * Parses Time to a Human readable format
+ * @param {number} ms The time in milliseconds
+ * @param {boolean} hideMs Hides the leftover Milliseconds
+ * @returns {string} The parsed time
+ */
+export function timeParse(ms: number, hideMs: boolean = false): string {
 	const weeks = Math.floor(ms / 604800000);
 	ms = ms - weeks * 604800000;
 	const days = Math.floor(ms / 86400000);
@@ -34,14 +40,13 @@ export function timeParse(ms: number, hideMs: boolean = false) {
 	return returnData;
 }
 
-export async function fetch(
-	url: RequestInfo,
-	init?: RequestInit
-): Promise<{
-	data: any;
-	status: number;
-	res: Response;
-}> {
+/**
+ * Send a fetch request (With data paprsing)
+ * @param {RequestInfo} url The URL for the Request
+ * @param {RequestInit} init The Options for the Request
+ * @returns {Promise<FetchResponse>} The Response from the Fetch
+ */
+export async function fetch(url: RequestInfo, init?: RequestInit): Promise<FetchResponse> {
 	const res = await dirFetch(url, init);
 	let data: any = await res.text();
 	try {
@@ -53,6 +58,13 @@ export async function fetch(
 	return data;
 }
 
+/**
+ * Sends a fetch request to the API as the User
+ * @param {string} token The User Token
+ * @param {string} path The API Path (`/api/v10/${path}`)
+ * @param {APIFetchOptions} options The options for the request
+ * @returns {Promise<any>} Response from the API Fetch
+ */
 export async function apiFetch(token: string, path: string, options: APIFetchOptions = {}): Promise<any> {
 	const requestData: RequestInit = {
 		method: options.method || "GET",
@@ -60,11 +72,14 @@ export async function apiFetch(token: string, path: string, options: APIFetchOpt
 			Authorization: token
 		}
 	};
+
+	if (options.body) requestData.body = options.body;
+
 	const requestURL = `https://discord.com/api/v10${path.startsWith("/") ? path : `/${path}`}${options.queryParams?.length ? `?${options.queryParams.join("&")}` : ""}`;
 
 	let data = await fetch(requestURL, requestData);
 	if (data.status == 429 && data.res.headers.get("retry-after")) {
-		console.log(`Request To ${requestURL} Hit Rate Limit, Retrying After ${timeParse(parseInt(data.res.headers.get("retry-after")) * 1000)}.`);
+		console.log(`Request To \"${requestURL}\" Hit Rate Limit, Retrying After ${timeParse(parseInt(data.res.headers.get("retry-after")) * 1000)}.`);
 		await new Promise(res => setTimeout(res, parseInt(data.res.headers.get("retry-after")) * 1000));
 		console.log("Retrying");
 		data = await apiFetch(token, path, options);
@@ -73,14 +88,14 @@ export async function apiFetch(token: string, path: string, options: APIFetchOpt
 }
 
 export function mmh3(key: string, seed?: number) {
-	var remainder, bytes, h1, h1b, c1, c1b, c2, c2b, k1, i;
+	let k1: number, h1b: number;
 
-	remainder = key.length & 3; // key.length % 4
-	bytes = key.length - remainder;
-	h1 = seed;
-	c1 = 0xcc9e2d51;
-	c2 = 0x1b873593;
-	i = 0;
+	let remainder = key.length & 3; // key.length % 4
+	let bytes = key.length - remainder;
+	let h1 = seed;
+	let c1 = 0xcc9e2d51;
+	let c2 = 0x1b873593;
+	let i = 0;
 
 	while (i < bytes) {
 		k1 = (key.charCodeAt(i) & 0xff) | ((key.charCodeAt(++i) & 0xff) << 8) | ((key.charCodeAt(++i) & 0xff) << 16) | ((key.charCodeAt(++i) & 0xff) << 24);
@@ -123,76 +138,51 @@ export function mmh3(key: string, seed?: number) {
 	return h1 >>> 0;
 }
 
-export function getChannelListID(channel: ChannelTypesEnum[keyof ChannelTypesEnum]) {
+/**
+ * Get the list ID for a channel
+ * @param channel The Channel
+ * @returns {number} The List ID For The Channel
+ */
+export function getChannelListID(channel: ChannelTypesEnum[keyof ChannelTypesEnum]): number {
 	let hash_in: string[] = [];
 
 	channel.permission_overwrites?.forEach(overwrite => {
-		const allow = jsdiscordperms.convertPerms(overwrite.allow);
-		const deny = jsdiscordperms.convertPerms(overwrite.deny);
-
 		// @ts-ignore
-		if (allow.READ_MESSAGES) hash_in.push(`allow:${overwrite.id}`);
+		if (jsdiscordperms.convertPerms(overwrite.allow).READ_MESSAGES) hash_in.push(`allow:${overwrite.id}`);
 		// @ts-ignore
-		else if (deny.READ_MESSAGES) hash_in.push(`deny:${overwrite.id}`);
+		else if (jsdiscordperms.convertPerms(overwrite.deny).READ_MESSAGES) hash_in.push(`deny:${overwrite.id}`);
 	});
 
 	const mm3_in = hash_in.join(",");
 	return mmh3(mm3_in);
 }
 
+/**
+ * Generate A Gateway URL
+ * @param url Gateway URL
+ * @param queryParams Params for the connection
+ * @returns {string} The URL
+ */
 export function genGatewayURL(
 	url: string,
 	queryParams: { [key: string]: string } = {
 		v: "10"
 	}
-) {
+): string {
 	url = url.split(".gg")[0] + ".gg";
 	queryParams.v ??= "10";
 	queryParams.encoding ??= "json";
-	const params = new URLSearchParams(queryParams).toString();
-	return url + "/?" + params;
-}
-export const textDecoder = new TextDecoder();
-
-let erlpack;
-try {
-	erlpack = require("erlpack");
-} catch {}
-
-let zlib;
-try {
-	zlib = require("zlib-sync");
-} catch {}
-
-let inflate;
-if (zlib) {
-	inflate = new zlib.Inflate({
-		chunkSize: 65535,
-		to: "string"
-	});
+	return url + "/?" + new URLSearchParams(queryParams).toString();
 }
 
-export function unpack(data: any, compressed: boolean, useEncryption: boolean): GatewayEventFormat {
-	if (data instanceof ArrayBuffer) data = new Uint8Array(data);
-	if (compressed) {
-		const l = data.length;
-		const flush = l >= 4 && data[l - 4] === 0x00 && data[l - 3] === 0x00 && data[l - 2] === 0xff && data[l - 1] === 0xff;
-		inflate.push(data, flush && zlib.Z_SYNC_FLUSH);
-		data = inflate.result;
-	}
-	if (useEncryption) {
-		if (!Buffer.isBuffer(data)) data = Buffer.from(new Uint8Array(data));
-	} else {
-		if (typeof data !== "string") {
-			data = textDecoder.decode(data);
-		}
-	}
-	return (useEncryption ? erlpack.unpack : JSON.parse)(data);
-}
-export function pack(data: any, useEncryption: boolean): string | Buffer {
-	return (useEncryption ? erlpack.pack : JSON.stringify)(data);
-}
-
+/**
+ * Fills a Class's Values
+ * @param {any} c The Class
+ * @param data The data to fill
+ * @param aliases Aliases `{'Name In Class': 'Name In Data'}`
+ * @param parsers Parsers `{'Name In Class': (data) => data}`
+ * @param ignore Ignore `['Name In Class', 'Name In Class']`
+ */
 export function fillClassValues(
 	c: any,
 	data: {

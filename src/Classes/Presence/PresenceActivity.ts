@@ -39,6 +39,7 @@ class PresenceActivity {
 		label?: string;
 		url?: string;
 	}>;
+	public session_id?: string;
 
 	constructor(client: Client, data: any) {
 		this.client = client;
