@@ -257,21 +257,6 @@ export type ChannelTypesType = {
 /** All channel types */
 export type ChannelType = ChannelTypesType[keyof ChannelTypesType] | BaseChannel | GuildChannel;
 
-/** Options for a GuildMemberSync */
-export interface GuildMemberSyncOptions {
-	typing?: boolean;
-	threads?: boolean;
-	activities?: boolean;
-}
-
-/** Display Data for a MemberListCategory */
-export interface MemberListCategoryDisplayData {
-	name: string;
-	id: string;
-	color: number;
-	members: Array<GuildMember>;
-}
-
 /** Format for a Gateway Event */
 export interface GatewayEventFormat {
 	op: number;

@@ -4,7 +4,7 @@ import Role from "./Classes/Role";
 import Client from "./Client";
 import Logger from "./Logger";
 import GuildManager from "./Managers/GuildManager";
-import { genGatewayURL } from "./utils";
+import { genGatewayURL, wait } from "./utils";
 
 export default class ClientEventHandler {
 	public client: Client;
@@ -25,8 +25,9 @@ export default class ClientEventHandler {
 			...(this.client.compressor.enabled ? { compress: "zlib-stream" } : {})
 		});
 		this.client.guilds = new GuildManager(this.client, data.d.guilds);
-		for (const guild of this.client.guilds.cache) {
+		for (const [_, guild] of this.client.guilds.cache) {
 			await guild.channels.fetch();
+			await wait(30);
 		}
 		for (const userData of data.d.users) {
 			this.client.createUser(userData);
@@ -132,55 +133,43 @@ export default class ClientEventHandler {
 		return guild.roles.remove(guild.roles.cache.find(i => i.id == data.d.role_id));
 	}
 	public GUILD_SCHEDULED_EVENT_CREATE(data) {
-		const guild = this.client.guilds.cache.find(i => i.id == data.guild_id);
+		const guild = this.client.guilds.cache.find(i => i.id == data.d.guild_id);
 		data.d.guild = guild;
 		data.d.subscribers = [];
-		if (guild.scheduled_events.find(i => i.id == data.d.id)) {
-			guild.scheduled_events[guild.scheduled_events.indexOf(guild.scheduled_events.find(i => i.id == data.d.id))] = data.d;
-		} else {
-			guild.scheduled_events.push(data.d);
-		}
+		guild.scheduled_events.push(data.d);
 		return data.d;
 	}
 	public GUILD_SCHEDULED_EVENT_UPDATE(data) {
-		const guild = this.client.guilds.cache.find(i => i.id == data.guild_id);
+		const guild = this.client.guilds.cache.find(i => i.id == data.d.guild_id);
 		data.d.guild = guild;
 		data.d.subscribers = [];
-		if (guild.scheduled_events.find(i => i.id == data.d.id)) {
-			guild.scheduled_events[guild.scheduled_events.indexOf(guild.scheduled_events.find(i => i.id == data.d.id))] = data.d;
-		} else {
-			guild.scheduled_events.push(data.d);
-		}
+		guild.scheduled_events.push(data.d);
 		return data.d;
 	}
 	public GUILD_SCHEDULED_EVENT_DELETE(data) {
-		const guild = this.client.guilds.cache.find(i => i.id == data.guild_id);
+		const guild = this.client.guilds.cache.find(i => i.id == data.d.guild_id);
 		data.d.guild = guild;
 		data.d.subscribers = [];
 		const item = guild.scheduled_events.find(i => i.id == data.d.id);
 		if (!item) return data.d;
-		return guild.scheduled_events.splice(guild.scheduled_events.indexOf(item), 1)[0];
+		guild.scheduled_events.remove(item);
+		return item;
 	}
 	public async GUILD_SCHEDULED_EVENT_USER_ADD(data) {
-		const guild = this.client.guilds.cache.find(i => i.id == data.guild_id);
-		const event = guild.scheduled_events.find(i => i.id == data.guild_scheduled_event_id);
+		const guild = this.client.guilds.cache.find(i => i.id == data.d.guild_id);
+		const event = guild.scheduled_events.find(i => i.id == data.d.guild_scheduled_event_id);
 		if (!event) return null;
-		const user = await this.client.getUser(data.user_id);
-		const subscribers = guild.scheduled_events[guild.scheduled_events.indexOf(event)].subscribers;
-		if (subscribers.find(i => i.id == user.id)) {
-			guild.scheduled_events[guild.scheduled_events.indexOf(event)].subscribers[subscribers.indexOf(subscribers.find(i => i.id == user.id))] = user;
-		} else {
-			guild.scheduled_events[guild.scheduled_events.indexOf(event)].subscribers.push(user);
-		}
+		const user = await this.client.getUser(data.d.user_id);
+		guild.scheduled_events.get(event.id).subscribers.push(user);
 		return user;
 	}
 	public async GUILD_SCHEDULED_EVENT_USER_REMOVE(data) {
-		const guild = this.client.guilds.cache.find(i => i.id == data.guild_id);
-		const event = guild.scheduled_events.find(i => i.id == data.guild_scheduled_event_id);
+		const guild = this.client.guilds.cache.find(i => i.id == data.d.guild_id);
+		const event = guild.scheduled_events.find(i => i.id == data.d.guild_scheduled_event_id);
 		if (!event) return null;
-		const user = await this.client.getUser(data.user_id);
-		const subscribers = guild.scheduled_events[guild.scheduled_events.indexOf(event)].subscribers;
+		const user = await this.client.getUser(data.d.user_id);
+		const subscribers = guild.scheduled_events.get(event.id).subscribers;
 		if (!subscribers.find(i => i.id == user.id)) return user;
-		return guild.scheduled_events[guild.scheduled_events.indexOf(event)].subscribers.splice(subscribers.indexOf(subscribers.find(i => i.id == user.id)), 1)[0];
+		return guild.scheduled_events.get(event.id).subscribers.splice(subscribers.indexOf(subscribers.find(i => i.id == user.id)), 1)[0];
 	}
 }

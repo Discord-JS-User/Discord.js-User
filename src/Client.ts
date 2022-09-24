@@ -1,7 +1,7 @@
 import WebSocket from "ws";
 import { EventEmitter, once } from "node:events";
 import TypedEmitter from "./Native Modules/TypedEmitter";
-import { apiFetch, genGatewayURL, fetch } from "./utils";
+import { apiFetch, genGatewayURL, fetch, wait } from "./utils";
 import { APIFetchOptions, GatewayEventFormat, PresenceStatus } from "./Types";
 import GatewayEvents from "./GatewayEvents";
 import ClientUser from "./Classes/ClientUser";
@@ -9,6 +9,7 @@ import GuildManager from "./Managers/GuildManager";
 import Logger from "./Logger";
 import ClientEventHandler from "./ClientEventHandler";
 import User from "./Classes/User";
+import { Collection } from "@discord.js-user/utility";
 
 /** The Client Object */
 export default class Client extends (EventEmitter as new () => TypedEmitter<GatewayEvents>) {
@@ -26,7 +27,7 @@ export default class Client extends (EventEmitter as new () => TypedEmitter<Gate
 	 */
 	private closed: boolean = false;
 	/** Messages that failed to send due to Gateway Disconnections */
-	private failed_packets: GatewayEventFormat[] = [];
+	private failed_packets: Collection<GatewayEventFormat> = new Collection<GatewayEventFormat>();
 
 	/** The login options passed for the client */
 	public loginOptions: ClientLoginOptions;
@@ -82,7 +83,7 @@ export default class Client extends (EventEmitter as new () => TypedEmitter<Gate
 	/** Guilds the User is in */
 	public guilds: GuildManager;
 	/** All stored users in this client */
-	public users: User[] = [];
+	public readonly users: Collection<User> = new Collection<User>();
 
 	/** Create the client */
 	constructor(options: ClientOptions = {}) {
@@ -215,6 +216,7 @@ export default class Client extends (EventEmitter as new () => TypedEmitter<Gate
 
 		this.sessionData = sessionData;
 		this.token = token;
+		this.clearBeater();
 		this.socket = new WebSocket(this.gatewayURL);
 
 		this.socket.onopen = (openEvent: WebSocket.Event) => {
@@ -224,7 +226,7 @@ export default class Client extends (EventEmitter as new () => TypedEmitter<Gate
 					if (err) this.Logger.error(err);
 				})
 			);
-			this.failed_packets = [];
+			this.failed_packets.clear();
 			this.emit("open", openEvent);
 		};
 		this.socket.onclose = (closeEvent: WebSocket.CloseEvent) => {
@@ -244,7 +246,7 @@ export default class Client extends (EventEmitter as new () => TypedEmitter<Gate
 			}
 			this.emit("error", error);
 			this.Logger.error("Error Recieved, Waiting 3 Seconds To Reconnect");
-			await new Promise(res => setTimeout(res, 3000));
+			await wait(3000);
 			this.Logger.error("Reconnecting");
 			this.reconnect();
 		};
@@ -465,11 +467,7 @@ export default class Client extends (EventEmitter as new () => TypedEmitter<Gate
 	 * @returns {User} The pushed user
 	 */
 	public pushUser(user: User): User {
-		if (this.users.find(i => i.id == user.id)) {
-			this.users[this.users.indexOf(this.users.find(i => i.id == user.id))] = user;
-		} else {
-			this.users.push(user);
-		}
+		this.users.push(user);
 		return user;
 	}
 

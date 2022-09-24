@@ -1,3 +1,4 @@
+import { Collection } from "@discord.js-user/utility";
 import Client from "../../Client";
 import { PresenceStatus } from "../../Types";
 import Guild from "../Guild";
@@ -16,7 +17,7 @@ class GuildMemberPresence {
 	public client_statuses: {
 		[platform: string]: PresenceStatus;
 	};
-	public activities: Array<PresenceActivity>;
+	public activities: Collection<PresenceActivity>;
 
 	constructor(client: Client, guild: Guild, member: GuildMember, data: any) {
 		this.client = client;
@@ -27,7 +28,7 @@ class GuildMemberPresence {
 		this.status = data.status || "offline";
 		this.game = data.game ? new PresenceActivity(this.client, data.game) : null;
 		this.client_statuses = data.client_statuses || {};
-		this.activities = data.activities?.map(i => new PresenceActivity(this.client, i)) || [];
+		this.activities = new Collection<PresenceActivity>(data.activities?.map(i => new PresenceActivity(this.client, i)) || []);
 	}
 }
 

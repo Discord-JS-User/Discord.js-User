@@ -6,6 +6,7 @@ import { BanObject, GuildScheduledEvent } from "./Types";
 import Role from "./Classes/Role";
 import User from "./Classes/User";
 import { Channel } from "diagnostics_channel";
+import { Collection } from "@discord.js-user/utility";
 
 /** The events for the Client Connection */
 export default interface GatewayEvents {
@@ -17,7 +18,7 @@ export default interface GatewayEvents {
 	heartbeatSend: () => void;
 	heartbeatAck: () => void;
 	ready: (readyData: object) => void;
-	sessions_replace: (sessions: Session[]) => void;
+	sessions_replace: (sessions: Collection<Session>) => void;
 	presence_update: (member: GuildMember) => void;
 
 	channel_create: (channel: Channel) => void;

@@ -1,3 +1,4 @@
+import { Collection } from "@discord.js-user/utility";
 import Client from "../../Client";
 import { PresenceStatus, SessionClientInfo } from "../../Types";
 import { fillClassValues } from "../../utils";
@@ -10,7 +11,7 @@ export default class Session {
 	public status: PresenceStatus;
 	public session_id: "all" | string;
 	public client_info: SessionClientInfo;
-	public activities: PresenceActivity[];
+	public activities: Collection<PresenceActivity>;
 	public active: boolean;
 
 	constructor(client: Client, data: any) {
@@ -22,7 +23,7 @@ export default class Session {
 			{},
 			{
 				active: d => !!d,
-				activities: d => d.map(i => new PresenceActivity(this.client, i))
+				activities: d => new Collection<PresenceActivity>(d.map(i => new PresenceActivity(this.client, i)))
 			}
 		);
 

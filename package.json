@@ -1,6 +1,6 @@
 {
 	"name": "@discord.js-user/discord.js-user",
-	"version": "1.1.0",
+	"version": "1.1.1",
 	"description": "",
 	"main": "dist/index.js",
 	"scripts": {
@@ -15,9 +15,8 @@
 	"author": "",
 	"license": "ISC",
 	"dependencies": {
-		"bufferutil": "^4.0.6",
+		"@discord.js-user/utility": "^1.0.3",
 		"node-fetch": "^2.6.7",
-		"utf-8-validate": "^5.0.9",
 		"ws": "^8.8.1"
 	},
 	"devDependencies": {
@@ -28,5 +27,9 @@
 		"@types/ws": "^8.5.3",
 		"prettier": "^2.7.1",
 		"typescript": "^4.8.2"
+	},
+	"optionalDependencies": {
+		"bufferutil": "^4.0.6",
+		"utf-8-validate": "^5.0.9"
 	}
 }

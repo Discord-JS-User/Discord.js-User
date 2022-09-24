@@ -1,3 +1,4 @@
+import { Collection } from "@discord.js-user/utility";
 import Client from "../../Client";
 import { CustomStatus, PresenceData, PresenceStatus } from "../../Types";
 import PresenceActivity from "./PresenceActivity";
@@ -8,7 +9,7 @@ export default class ClientUserPresence {
 	/**
 	 * The Activites
 	 */
-	public activities: PresenceActivity[] = [];
+	public activities: Collection<PresenceActivity> = new Collection<PresenceActivity>();
 	/**
 	 * AFK Or Not
 	 */

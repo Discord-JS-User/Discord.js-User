@@ -80,7 +80,7 @@ export async function apiFetch(token: string, path: string, options: APIFetchOpt
 	let data = await fetch(requestURL, requestData);
 	if (data.status == 429 && data.res.headers.get("retry-after")) {
 		console.log(`Request To \"${requestURL}\" Hit Rate Limit, Retrying After ${timeParse(parseInt(data.res.headers.get("retry-after")) * 1000)}.`);
-		await new Promise(res => setTimeout(res, parseInt(data.res.headers.get("retry-after")) * 1000));
+		await wait(parseInt(data.res.headers.get("retry-after")) * 1000);
 		console.log("Retrying");
 		data = await apiFetch(token, path, options);
 	}
@@ -217,4 +217,14 @@ export function fillClassValues(
 		if (info === undefined && parser === undefined) continue;
 		c[field] = parser ? parser(info) : info;
 	}
+}
+
+/**
+ * Wait for a certain amount of time asynchronously
+ * @param time The time to wait (defaults to 0 milliseconds)
+ * @returns A Promise that resolves after the specified amount of time
+ */
+export function wait(time: number = 0): Promise<void> {
+	if (typeof time != "number") throw new TypeError(`Time Argument \`${time}\` Is Not A Number`);
+	return new Promise(res => setTimeout(res, time));
 }

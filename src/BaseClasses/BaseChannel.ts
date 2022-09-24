@@ -1,3 +1,4 @@
+import { Collection } from "@discord.js-user/utility";
 import Client from "../Client";
 import { ChannelPermissionOverwrite } from "../Types";
 import { fillClassValues } from "../utils";
@@ -7,7 +8,7 @@ class BaseChannel {
 
 	public id: string;
 	public name?: string;
-	public permission_overwrites?: Array<ChannelPermissionOverwrite>;
+	public permission_overwrites?: Collection<ChannelPermissionOverwrite>;
 	public nsfw?: boolean;
 	public flags?: number;
 
@@ -15,7 +16,7 @@ class BaseChannel {
 		this.client = client;
 		this.id = data.id;
 		this.name = data.name;
-		this.permission_overwrites = data.permission_overwrites;
+		this.permission_overwrites = new Collection<ChannelPermissionOverwrite>(data.permission_overwrites);
 		this.nsfw = !!data.nsfw;
 		this.flags = data.flags;
 	}

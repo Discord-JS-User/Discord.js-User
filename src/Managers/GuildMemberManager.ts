@@ -2,12 +2,13 @@ import Guild from "../Classes/Guild";
 import GuildMember from "../Classes/GuildMember";
 import User from "../Classes/User";
 import Client from "../Client";
+import { Collection } from "@discord.js-user/utility";
 
 class GuildMemberManager {
 	public client: Client;
 	public guild: Guild;
 
-	public cache: Array<GuildMember> = [];
+	public readonly cache: Collection<GuildMember> = new Collection<GuildMember>();
 
 	constructor(client: Client, guild: Guild, data?: any) {
 		this.client = client;
@@ -15,8 +16,9 @@ class GuildMemberManager {
 		if (data) this.pushToCache(data);
 	}
 
-	public async fetch(IDs: string[] | string): Promise<GuildMember[]> {
-		if (!IDs) return [];
+	public async fetch(IDs: string[] | string): Promise<Collection<GuildMember>> {
+		if (!IDs) return new Collection<GuildMember>();
+		if (!Array.isArray(IDs)) IDs = [IDs];
 		const nonce = (Date.now() - Math.floor(Math.random() * 500_000_000_000)).toString();
 
 		this.client.sendMessage({
@@ -54,24 +56,16 @@ class GuildMemberManager {
 		}
 
 		for (const member of members) {
-			if (this.cache.find(i => i.id == member.id)) {
-				this.cache[this.cache.indexOf(this.cache.find(i => i.id == member.id))] = member;
-			} else {
-				this.cache.push(member);
-			}
+			this.cache.push(member);
 		}
 
 		return this.cache.filter(i => i.id == IDs || IDs.includes(i.id));
 	}
 
-	public pushToCache(members: GuildMember | GuildMember[]): GuildMember[] {
+	public pushToCache(members: GuildMember | GuildMember[]): Collection<GuildMember> {
 		if (!Array.isArray(members)) members = [members];
 		for (const member of members) {
-			if (this.cache.find(i => i.id == member.id)) {
-				this.cache[this.cache.indexOf(this.cache.find(i => i.id == member.id))] = member;
-			} else {
-				this.cache.push(member);
-			}
+			this.cache.push(member);
 		}
 		return this.cache;
 	}
@@ -80,10 +74,10 @@ class GuildMemberManager {
 		if (!Array.isArray(users)) users = [users];
 		let removed: GuildMember[] = [];
 		for (const user of users) {
-			const userInCache = this.cache.find(i => i.id == user.id);
-			if (!userInCache) continue;
-			this.cache.splice(this.cache.indexOf(userInCache), 1);
-			removed.push(userInCache);
+			const memberInCache = this.cache.find(i => i.id == user.id);
+			if (!memberInCache) continue;
+			this.cache.remove(memberInCache);
+			removed.push(memberInCache);
 		}
 		return removed;
 	}

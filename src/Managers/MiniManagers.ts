@@ -2,12 +2,13 @@ import Connection from "../Classes/ClientUser/Connection";
 import Guild from "../Classes/Guild";
 import Client from "../Client";
 import { BanObject } from "../Types";
+import { Collection } from "@discord.js-user/utility";
 
 export class BanManager {
 	public client: Client;
 	public guild: Guild;
 
-	public cache: BanObject[] = [];
+	public cache: Collection<BanObject> = new Collection<BanObject>();
 
 	constructor(client: Client, guild: Guild) {
 		this.client = client;
@@ -15,37 +16,40 @@ export class BanManager {
 	}
 
 	public async fetch() {
-		this.cache = (await this.client.apiFetch(`/guilds/${this.guild.id}/bans`)).map(ban => {
-			ban.user = this.client.createUser(ban.user);
-		});
+		this.cache = new Collection<BanObject>(
+			(await this.client.apiFetch(`/guilds/${this.guild.id}/bans`)).map(ban => {
+				ban.user = this.client.createUser(ban.user);
+				return ban as BanObject;
+			})
+		);
 		return this.cache;
 	}
 
 	public push(data: BanObject) {
-		if (this.cache.find(i => i.user.id == data.user.id)) this.cache[this.cache.indexOf(this.cache.find(i => i.user.id == data.user.id))] = data;
-		else this.cache.push(data);
+		this.cache.push(data);
 		return data;
 	}
 
 	public remove(data: BanObject) {
 		const item = this.cache.find(i => i.user.id == data.user.id);
 		if (!item) return;
-		return this.cache.splice(this.cache.indexOf(item), 1)[0];
+		this.cache.remove(item);
+		return item;
 	}
 }
 
 export class ConnectionManager {
 	public client: Client;
 
-	public cache: Connection[] = [];
+	public cache: Collection<Connection> = new Collection<Connection>();
 
 	constructor(client: Client, connections: any[]) {
 		this.client = client;
-		this.cache = connections.map(i => new Connection(this.client, i));
+		this.cache.push(...connections.map(i => new Connection(this.client, i)));
 	}
 
 	public async fetch() {
-		this.cache = (await this.client.apiFetch("/users/@me/connections")).map(i => new Connection(this.client, i));
+		this.cache = new Collection<Connection>((await this.client.apiFetch("/users/@me/connections")).map(i => new Connection(this.client, i)));
 		return this.cache;
 	}
 

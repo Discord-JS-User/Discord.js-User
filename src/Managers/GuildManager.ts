@@ -1,14 +1,15 @@
 import Guild from "../Classes/Guild";
 import Client from "../Client";
+import { Collection } from "@discord.js-user/utility";
 
 class GuildManager {
 	public client: Client;
 
-	public cache: Array<Guild> = [];
+	public readonly cache: Collection<Guild> = new Collection<Guild>();
 
 	constructor(client: Client, guilds: Array<any>) {
 		this.client = client;
-		this.cache = guilds.map(g => new Guild(this.client, g));
+		this.cache.push(...guilds.map(g => new Guild(this.client, g)));
 	}
 
 	public async fetch(id: string, force: boolean = false) {
@@ -23,18 +24,15 @@ class GuildManager {
 
 	public push(data: any) {
 		const guild = new Guild(this.client, data);
-		if (this.cache.find(i => i.id == guild.id)) {
-			this.cache[this.cache.indexOf(this.cache.find(i => i.id == guild.id))] = guild;
-		} else {
-			this.cache.push(guild);
-		}
+		this.cache.push(guild);
 		return guild;
 	}
 
 	public remove(guild: any) {
 		const foundGuild = this.cache.find(i => i.id == guild.id);
 		if (!foundGuild) return guild;
-		return this.cache.splice(this.cache.indexOf(foundGuild), 1)[0];
+		this.cache.remove(foundGuild);
+		return foundGuild;
 	}
 }
 

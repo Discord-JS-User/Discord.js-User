@@ -1,3 +1,4 @@
+import { Collection } from "@discord.js-user/utility";
 import Client from "../Client";
 import { fillClassValues } from "../utils";
 import Guild from "./Guild";
@@ -16,7 +17,7 @@ class GuildMember {
 	public displayName: string;
 	public username: string;
 	public nickname?: string;
-	public roles: Array<Role>;
+	public roles: Collection<Role>;
 	public joined_at: Date;
 	public boosting_since: Date;
 	public deafened: boolean;
@@ -53,10 +54,10 @@ class GuildMember {
 			user: i => this.client.createUser(i),
 			id: () => data.user.id,
 			username: _ => data.user.username,
-			roles: i => i.map(r => this.guild.roles.cache.find(r2 => r2.id == r)),
+			roles: i => new Collection<Role>(i.map(r => this.guild.roles.cache.find(r2 => r2.id == r))),
 			pendingJoin: i => !!i,
 			timeout_until: i => (i ? new Date(i) : null),
-			color: () => this.roles.find(i => i?.color)?.color || 0,
+			color: () => this.roles.find(i => !!i?.color)?.color || 0,
 			hoistRole: () => this.roles.find(i => i?.hoist),
 			presence: d => (d ? new GuildMemberPresence(this.client, this.guild, this, d) : d),
 			joined_at: d => new Date(d),

@@ -2,12 +2,13 @@ import { ChannelType, ChannelTypes } from "../Types";
 import Guild from "../Classes/Guild";
 import Client from "../Client";
 import AnyChannel from "../Classes/Channels/AnyChannel";
+import { Collection } from "@discord.js-user/utility";
 
 class ChannelManager {
 	public client: Client;
 	public guild: Guild;
 
-	public cache: Array<ChannelType> = [];
+	public readonly cache: Collection<ChannelType> = new Collection<ChannelType>();
 	public rules_channel?: ChannelType;
 	public system_channel?: ChannelType;
 	public public_updates_channel?: ChannelType;
@@ -33,7 +34,7 @@ class ChannelManager {
 				}
 			}
 			channel = new (ChannelTypes[channel.type] || AnyChannel)(this.client, channel, this.guild);
-			this.cache.find(c => c.id == channel.id) ? (this.cache[this.cache.indexOf(this.cache.find(c => c.id == channel.id))] = channel) : this.cache.push(channel);
+			this.cache.push(channel);
 			this.updateSpecialChannels(channel);
 		}
 		return this.cache;
@@ -68,7 +69,8 @@ class ChannelManager {
 	public remove(channel: ChannelType) {
 		const item = this.cache.find(i => i.id == channel.id);
 		if (!item) return channel;
-		return this.cache.splice(this.cache.indexOf(item), 1)[0];
+		this.cache.remove(item);
+		return item;
 	}
 }
 

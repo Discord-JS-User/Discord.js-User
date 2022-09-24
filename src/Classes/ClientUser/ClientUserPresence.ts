@@ -1,3 +1,4 @@
+import { Collection } from "@discord.js-user/utility";
 import Client from "../../Client";
 import { CustomStatus, PresenceData, PresenceStatus } from "../../Types";
 import PresenceActivity from "../Presence/PresenceActivity";
@@ -8,7 +9,7 @@ export default class ClientUserPresence {
 	/**
 	 * The Activites
 	 */
-	public activities: PresenceActivity[] = [];
+	public activities: Collection<PresenceActivity> = new Collection<PresenceActivity>();
 	/**
 	 * AFK Or Not
 	 */
@@ -55,7 +56,7 @@ export default class ClientUserPresence {
 		this.client.sendMessage({
 			op: 3,
 			d: {
-				activities: this.activities.map(i => i.toJSON()),
+				activities: this.activities.toJSON().map(i => i.toJSON()),
 				afk: this.afk,
 				since: this.since,
 				status: this.status
