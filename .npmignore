@@ -1,11 +1,8 @@
 .git
 .github
-.temp
-docs
-docsData
 src
 test
-.gitignore
-ChannelTypeExamples.json
-dump.json
 fix-docgen.js
+dump.json
+dump2.json
+dump2.txt

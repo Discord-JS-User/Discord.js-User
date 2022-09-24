@@ -1,11 +1,11 @@
 import Client from "../Client";
 import GuildMemberManager from "../Managers/GuildMemberManager";
-import { GuildScheduledEvent, GuildFeature, Sticker, GuildNSFWLevel, Emoji } from "../Types";
+import { GuildScheduledEvent, GuildFeature, Sticker, GuildNSFWLevel, Emoji, VoiceState } from "../Types";
 import GuildMember from "./GuildMember";
 import ChannelManager from "../Managers/ChannelManager";
 import RoleManager from "../Managers/RoleManager";
-import GuildMemberListManager from "../AppElements/MemberList/GuildMemberListManager";
 import { fillClassValues } from "../utils";
+import { BanManager } from "../Managers/MiniManagers";
 
 class Guild {
 	public client: Client;
@@ -48,8 +48,9 @@ class Guild {
 	public default_message_notifications: number;
 	public channels: ChannelManager;
 	public roles: RoleManager;
-
-	public memberList: GuildMemberListManager;
+	public unavailable: boolean;
+	public voice_states: VoiceState[];
+	public bans: BanManager;
 
 	constructor(client: Client, data: any) {
 		this.client = client;
@@ -66,26 +67,52 @@ class Guild {
 		};
 		const parsers = {
 			raw: () => data,
+			unavailable: u => !!u,
 			roles: i => new RoleManager(this.client, this, i),
-			channels: () => new ChannelManager(this.client, this),
-			members: () => new GuildMemberManager(this.client, this),
+			channels: c => new ChannelManager(this.client, this, c),
+			members: m => new GuildMemberManager(this.client, this, m),
 			owner: () => this.members.cache.find((m: GuildMember) => m.id == data.owner_id),
 			vanity_url: () => {
 				if (data.vanity_url_code) return `https://discord.gg/${data.vanity_url_code}`;
 				else return null;
 			},
-			memberList: () => {
-				this.client.memberList.loadGuild(this);
-				return this.client.memberList.guilds.find(i => i.id == this.id);
-			},
-			joined_at: d => new Date(d),
+			joined_at: d => (d ? new Date(d) : null),
 			emojis: d =>
-				d.map(i => {
-					i.url = `https://cdn.discordapp.com/emojis/${i.id}.${i.animated ? "gif" : "png"}`;
-					return i;
-				})
+				d
+					? d.map(i => {
+							i.url = `https://cdn.discordapp.com/emojis/${i.id}.${i.animated ? "gif" : "png"}`;
+							return i;
+					  })
+					: d,
+			voice_states: d => {
+				if (!d || typeof d != "object") return d;
+				if (d.guild_id) d.guild = this;
+				if (d.user_id) d.user = this.client.users.find(i => i.id == d.user_id);
+				if (d.member) d.member = this.members.cache.find(i => i.id == d.member.user.id);
+				if (d.request_to_speak_timestamp) d.request_to_speak_timestamp = new Date(d.request_to_speak_timestamp);
+				return d;
+			},
+			bans: () => new BanManager(this.client, this),
+			stickers: st =>
+				st
+					? st.map(s => {
+							if (s.user) s.user = this.client.createUser(s.user);
+							return s;
+					  })
+					: st,
+			scheduled_events: d =>
+				d
+					? d.map(i => {
+							i.guild = this;
+							i.subscribers = [];
+							return i;
+					  })
+					: d
 		};
 		fillClassValues(this, data, aliases, parsers);
+
+		if (data.threads) this.channels.pushToCache(data.threads);
+		if (data.presences) for (const presence of data.presences) this.members.cache.find(i => i.id == presence.user.id)?._updatePresence(presence);
 	}
 
 	public async fetch(): Promise<{ [key: string]: any }> {

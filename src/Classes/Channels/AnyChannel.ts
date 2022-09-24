@@ -7,6 +7,7 @@ import GuildCategory from "./GuildCategory";
 class AnyChannel {
 	public client: Client;
 	public guild: Guild;
+	public AnyChannel = true;
 
 	public id: string;
 	public name?: string;

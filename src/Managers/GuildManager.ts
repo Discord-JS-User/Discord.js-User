@@ -18,15 +18,23 @@ class GuildManager {
 		const data = await this.client.apiFetch(`/guilds/${id}`, {
 			queryParams: ["with_counts=true"]
 		});
-		const guild = new Guild(this.client, data);
+		return this.push(data);
+	}
 
-		if (this.cache.find(i => i.id == id)) {
-			this.cache[this.cache.indexOf(this.cache.find(i => i.id == id))] = guild;
+	public push(data: any) {
+		const guild = new Guild(this.client, data);
+		if (this.cache.find(i => i.id == guild.id)) {
+			this.cache[this.cache.indexOf(this.cache.find(i => i.id == guild.id))] = guild;
 		} else {
 			this.cache.push(guild);
 		}
-
 		return guild;
+	}
+
+	public remove(guild: any) {
+		const foundGuild = this.cache.find(i => i.id == guild.id);
+		if (!foundGuild) return guild;
+		return this.cache.splice(this.cache.indexOf(foundGuild), 1)[0];
 	}
 }
 

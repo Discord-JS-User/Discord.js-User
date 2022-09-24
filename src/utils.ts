@@ -1,5 +1,5 @@
 import dirFetch, { RequestInfo, RequestInit, Response } from "node-fetch";
-import { APIFetchOptions, ChannelTypesEnum, FetchResponse } from "./Types";
+import { APIFetchOptions, ChannelType, FetchResponse } from "./Types";
 import jsdiscordperms from "./Native Modules/jsdiscordperms";
 
 export { jsdiscordperms, dirFetch, RequestInfo, RequestInit, Response };
@@ -87,7 +87,19 @@ export async function apiFetch(token: string, path: string, options: APIFetchOpt
 	return data.data;
 }
 
-export function mmh3(key: string, seed?: number) {
+/**
+ * JS Implementation of MurmurHash3 (r136) (as of May 20, 2011)
+ *
+ * @author <a href="mailto:gary.court@gmail.com">Gary Court</a>
+ * @see http://github.com/garycourt/murmurhash-js
+ * @author <a href="mailto:aappleby@gmail.com">Austin Appleby</a>
+ * @see http://sites.google.com/site/murmurhash/
+ *
+ * @param {string} key ASCII only
+ * @param {number} seed Positive integer only
+ * @return {number} 32-bit positive integer hash
+ */
+export function mmh3(key: string, seed?: number): number {
 	let k1: number, h1b: number;
 
 	let remainder = key.length & 3; // key.length % 4
@@ -143,18 +155,21 @@ export function mmh3(key: string, seed?: number) {
  * @param channel The Channel
  * @returns {number} The List ID For The Channel
  */
-export function getChannelListID(channel: ChannelTypesEnum[keyof ChannelTypesEnum]): number {
+export function getChannelListID(channel: ChannelType): string {
 	let hash_in: string[] = [];
 
 	channel.permission_overwrites?.forEach(overwrite => {
+		const allow = jsdiscordperms.convertPerms(overwrite.allow);
+		const deny = jsdiscordperms.convertPerms(overwrite.deny);
+
 		// @ts-ignore
-		if (jsdiscordperms.convertPerms(overwrite.allow).READ_MESSAGES) hash_in.push(`allow:${overwrite.id}`);
+		if (allow.READ_MESSAGES) hash_in.push(`allow:${overwrite.id}`);
 		// @ts-ignore
-		else if (jsdiscordperms.convertPerms(overwrite.deny).READ_MESSAGES) hash_in.push(`deny:${overwrite.id}`);
+		else if (deny.READ_MESSAGES) hash_in.push(`deny:${overwrite.id}`);
 	});
 
 	const mm3_in = hash_in.join(",");
-	return mmh3(mm3_in);
+	return mmh3(mm3_in).toString();
 }
 
 /**

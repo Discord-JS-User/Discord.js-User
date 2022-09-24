@@ -1,6 +1,6 @@
 import Client from "../../Client";
 import { CustomStatus, PresenceData, PresenceStatus } from "../../Types";
-import PresenceActivity from "./PresenceActivity";
+import PresenceActivity from "../Presence/PresenceActivity";
 
 export default class ClientUserPresence {
 	public client: Client;
@@ -42,7 +42,7 @@ export default class ClientUserPresence {
 		this.since = Date.now();
 	}
 
-	public setCustomStatus(clear: boolean = false, status: CustomStatus) {
+	public setCustomStatus(status: CustomStatus, clear: boolean = false) {
 		status.name = "Custom Status";
 		status.type = 4;
 		this.activities = this.activities.filter(i => i.name != status.name);

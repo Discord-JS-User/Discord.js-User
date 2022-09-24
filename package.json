@@ -1,15 +1,16 @@
 {
-	"name": "@derpdevs/discord.js-user",
+	"name": "@discord.js-user/discord.js-user",
 	"version": "1.1.0",
 	"description": "",
 	"main": "dist/index.js",
 	"scripts": {
 		"test": "npm run build; echo 'Running Test\n\n'; node test/index.test.js",
 		"quickTest": "node test/index.test.js",
-		"build": "npm run pretty; echo 'Compiling TypeScript\n'; rm -rf ./dist; npx tsc",
-		"ci": "npm install; npm update; rm -rf ./node_modules; rm ./package-lock.json; npm install; echo '\nFixing Docgen'; node fix-docgen; echo '';",
+		"build": "echo 'Compiling TypeScript\n'; rm -rf ./dist; npx tsc",
+		"ci": "npm install; npm update; rm -rf ./node_modules; rm ./package-lock.json; npm install; echo '\nFixing Docgen'; node fix-docgen; node fix-docgen; echo '';",
 		"pretty": "echo 'Prettifying src'; npx prettier --write ./src/** --arrow-parens avoid --print-width 1000000 --tab-width 4 --trailing-comma none --use-tabs true --vue-indent-script-and-style true; echo '\nPrettifying Tests'; npx prettier --write ./test/**/* --arrow-parens avoid --print-width 1000000 --tab-width 4 --trailing-comma none --use-tabs true --vue-indent-script-and-style true; echo ''",
-		"docgen": "npm run build; echo 'Generating Doc Files\n'; npx docgen -i './src/**' --typescript true -o '../Discord.js User Docs/data/docs.json'; echo '';"
+		"docgen": "npm run build; echo 'Generating Doc Files\n'; npx docgen -i './src/**' --typescript true -o '../Discord.js User Docs/data/docs.json'; echo '';",
+		"ready": "npm run ci; npm run pretty; npm run build;"
 	},
 	"author": "",
 	"license": "ISC",

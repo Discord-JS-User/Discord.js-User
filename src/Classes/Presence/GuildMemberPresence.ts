@@ -12,7 +12,7 @@ class GuildMemberPresence {
 	public user: User;
 
 	public status: PresenceStatus;
-	public game: PresenceActivity;
+	public game?: PresenceActivity;
 	public client_statuses: {
 		[platform: string]: PresenceStatus;
 	};
@@ -24,9 +24,9 @@ class GuildMemberPresence {
 		this.member = member;
 		this.user = this.member.user;
 
-		this.status = data.status;
+		this.status = data.status || "offline";
 		this.game = data.game ? new PresenceActivity(this.client, data.game) : null;
-		this.client_statuses = data.client_statuses;
+		this.client_statuses = data.client_statuses || {};
 		this.activities = data.activities?.map(i => new PresenceActivity(this.client, i)) || [];
 	}
 }

@@ -6,6 +6,8 @@ import Role from "./Role";
 import User from "./User";
 
 class GuildMember {
+	public raw: any;
+
 	public client: Client;
 	public guild: Guild;
 	public user: User;
@@ -32,7 +34,12 @@ class GuildMember {
 		this.setup(data);
 	}
 
+	public _updatePresence(presence: any) {
+		this.presence = new GuildMemberPresence(this.client, this.guild, this, presence);
+	}
+
 	private setup(data: any) {
+		this.raw = data;
 		if (data.avatar) data.user.avatar = data.avatar;
 		const aliases = {
 			nickname: "nick",
@@ -43,20 +50,20 @@ class GuildMember {
 			pendingJoin: "pending"
 		};
 		const parsers = {
-			user: i => new User(this.client, i),
+			user: i => this.client.createUser(i),
 			id: () => data.user.id,
 			username: _ => data.user.username,
 			roles: i => i.map(r => this.guild.roles.cache.find(r2 => r2.id == r)),
 			pendingJoin: i => !!i,
 			timeout_until: i => (i ? new Date(i) : null),
-			color: () => this.roles.find(i => i.color)?.color || 0,
-			hoistRole: () => this.roles.find(i => i.hoist),
+			color: () => this.roles.find(i => i?.color)?.color || 0,
+			hoistRole: () => this.roles.find(i => i?.hoist),
 			presence: d => (d ? new GuildMemberPresence(this.client, this.guild, this, d) : d),
 			joined_at: d => new Date(d),
 			boosting_since: d => (d ? new Date(d) : null),
 			displayName: () => data.nick || data.user.username
 		};
-		fillClassValues(this, data, aliases, parsers);
+		fillClassValues(this, data, aliases, parsers, ["raw"]);
 	}
 
 	public async fetch(): Promise<{ [key: string]: any }> {

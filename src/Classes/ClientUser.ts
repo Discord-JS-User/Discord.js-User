@@ -1,9 +1,9 @@
 import Client from "../Client";
-import ConnectionManager from "../Managers/ConnectionManager";
-import ClientPresence from "./Presence/ClientPresence";
+import ClientPresence from "./ClientUser/ClientUserPresence";
 import User from "./User";
 import SessionManager from "../Managers/SessionManager";
 import UserSettings from "./ClientUser/UserSettings";
+import { ConnectionManager } from "../Managers/MiniManagers";
 
 export default class ClientUser extends User {
 	public raw: any;
@@ -13,8 +13,21 @@ export default class ClientUser extends User {
 	public sessions: SessionManager;
 	public settings: UserSettings;
 
+	public purchased_flags: number;
+	public phone: string;
+	public nsfw_allowed: boolean;
+	public mobile: boolean;
+	public desktop: boolean;
+
 	constructor(client: Client, data: any) {
 		super(client, data.user);
+
+		this.purchased_flags = data.purchased_flags;
+		this.phone = data.phone;
+		this.nsfw_allowed = data.nsfw_allowed;
+		this.mobile = data.mobile;
+		this.desktop = data.desktop;
+
 		this.raw = data;
 		this.presence = new ClientPresence(this.client);
 		this.connections = new ConnectionManager(this.client, data.connected_accounts);

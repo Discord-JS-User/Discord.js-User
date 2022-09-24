@@ -7,55 +7,10 @@ import GuildStageChannel from "./Classes/Channels/Specific/GuildStageChannel";
 import GuildForumChannel from "./Classes/Channels/Specific/GuildForumChannel";
 import GuildMember from "./Classes/GuildMember";
 import { BodyInit } from "node-fetch";
-
-/** Session Data for the client login */
-export interface SessionData {
-	client_state?: {
-		guild_hashes?: Object;
-		highest_last_message_id?: string;
-		read_state_version?: number;
-		user_guild_settings_version?: number;
-		user_settings_version?: number;
-	};
-	properties: {
-		browser: "Discord Desktop" | "Discord Android" | string;
-		browser_user_agent?: string;
-		client_build_number?: string;
-		client_event_source?: unknown;
-		client_version?: string;
-		browser_version?: string;
-		device?: string;
-		device_id?: string;
-		distro?: string;
-		os: "Windows" | "Linux" | "OSX" | "iOS" | "Android" | string;
-		os_arch?: string;
-		os_version?: string;
-		referrer?: string;
-		referrer_current?: string;
-		referring_domain?: string;
-		referring_domain_current?: string;
-		release_channel?: string;
-		window_manager?: string;
-		system_locale?: string;
-	};
-	presence?: {
-		activities: object[];
-		afk: boolean;
-		since: number;
-		status: PresenceStatus;
-	};
-}
-
-/** Options for the client login */
-export interface ClientLoginOptions {}
-
-/** Options for the client constructor */
-export interface ClientOptions {
-	/**
-	 * Enable Debug Logging
-	 */
-	debug?: boolean;
-}
+import Guild from "./Classes/Guild";
+import GuildChannel from "./Classes/Channels/GuildChannel";
+import BaseChannel from "./BaseClasses/BaseChannel";
+import { PublicThreadChannel } from "./Classes/Channels/Specific/Threads/PublicThreadChannel";
 
 /** Custom Status format */
 export interface CustomStatus {
@@ -189,6 +144,7 @@ export enum GuildScheduledEventType {
 export interface GuildScheduledEvent {
 	id: string;
 	guild_id: string;
+	guild: Guild;
 	channel_id: string;
 	creator_id?: string;
 	name: string;
@@ -205,6 +161,7 @@ export interface GuildScheduledEvent {
 	creator?: User;
 	user_count?: number;
 	image?: string;
+	subscribers: User[];
 }
 
 /** A Sticker */
@@ -256,39 +213,49 @@ export interface ChannelPermissionOverwrite {
 export interface ThreadMetaData {
 	archived: boolean;
 	auto_archive_duration: number;
-	archive_timestamp: number;
+	archive_timestamp: string;
 	locked: boolean;
 	invitable?: boolean;
-	create_timestamp?: number;
+	create_timestamp?: string;
 }
 
 /** A member in a thread */
 export interface ThreadMember {
 	id?: string;
 	user_id?: string;
-	join_timestamp: number;
+	join_timestamp: string;
 	flags: number;
 }
+/** The client's member in a thread */
+export interface ClientThreadMember extends ThreadMember {
+	mute_config?: unknown;
+	muted?: boolean;
+}
 
-/** Different Types of Channels (TYPE) */
+/** Different Types of Channels (CONST) */
 export const ChannelTypes = {
 	0: GuildTextChannel,
 	2: GuildVoiceChannel,
 	4: GuildCategory,
 	5: GuildAnnouncementChannel,
+	11: PublicThreadChannel,
 	13: GuildStageChannel,
 	15: GuildForumChannel
 };
 
-/** Different Types of Channels (ENUM) */
-export type ChannelTypesEnum = {
+/** Different Types of Channels (TYPE) */
+export type ChannelTypesType = {
 	0: GuildTextChannel;
 	2: GuildVoiceChannel;
 	4: GuildCategory;
 	5: GuildAnnouncementChannel;
+	11: PublicThreadChannel;
 	13: GuildStageChannel;
 	15: GuildForumChannel;
 };
+
+/** All channel types */
+export type ChannelType = ChannelTypesType[keyof ChannelTypesType] | BaseChannel | GuildChannel;
 
 /** Options for a GuildMemberSync */
 export interface GuildMemberSyncOptions {
@@ -355,67 +322,80 @@ export interface GuildFolder {
 
 export type Theme = "dark" | "light";
 
-export interface UserSettings {
-	/** how many seconds being idle before the user is marked as "AFK"; this handles when push notifications are sent */
-	afk_timeout: number;
-	allow_accessibility_detection: boolean;
-	/**	play animated emoji without hovering over them */
-	animate_emoji: boolean;
-	/** when stickers animate; 0: always, 1: on hover/focus, 2: never */
-	animate_stickers: StickerAnimate;
-	/** sync phone contacts with discord (seemingly unused, enabling contact sync does not change it) */
-	contact_sync_enabled: boolean;
-	/** convert "old fashioned" emoticons to emojis */
-	convert_emoticons: boolean;
-	/** custom status for the user */
-	custom_status: CustomStatus;
-	/** allow DMs from guild members by default on guild join */
-	default_guilds_restricted: boolean;
-	/** whether the client will detect accounts from other services for connections */
-	detect_platform_accounts: boolean;
-	/** show the option to copy ids in right click menus */
-	developer_mode: boolean;
-	/** hide the activity tab */
-	disable_games_tab: boolean;
-	/** enable /tts command and playback */
-	enabled_tts_command: boolean;
-	/** content filter level; 0: off, 1: friends excluded, 2: scan everyone */
-	explicit_content_filter: ExplicitContentFilter;
-	/** flags for how people can add the user via contact sync */
-	friend_discovery_flags: number;
-	/** who can add the user as a friend */
-	friend_source_flags: FriendSourceFlags;
-	/** play GIFs without hovering over them */
-	gif_auto_play: boolean;
-	/** guild folders set by the user */
-	guild_folders: GuildFolder[];
-	/** array of guild ids in order of position on the sidebar */
-	guild_positions: string[];
-	/** display images and video when uploaded directly */
-	inline_attachment_media: boolean;
-	/** display images and video when linked */
-	inline_embed_media: boolean;
-	/** user defined locale */
-	locale: string;
-	/** use compact mode */
-	message_display_compact: boolean;
-	/** Whether to integrate calls with the phone app */
-	native_phone_integration_enabled: boolean;
-	/** display embeds */
-	render_embeds: boolean;
-	/** display reactions */
-	render_reactions: boolean;
-	/** array of guild ids where the user has disallowed DMs from guild members */
-	restricted_guilds: string[];
-	/** show playing status for detected/added games */
-	show_current_game: boolean;
-	/** current status */
-	status: PresenceStatus;
-	stream_notifications_enabled: boolean;
-	/** client theme */
-	theme: Theme;
-	/** timezone offset in minutes (arbitrary number, no way to change in client) */
-	timezone_offset: number;
-	/** allow access to NSFW guilds from iOS devices */
-	view_nsfw_guilds: boolean;
+export type IntegrationType = "twitch" | "youtube" | "discord";
+
+export enum IntegrationExpireBehavior {
+	"Remove role" = 0,
+	"Kick" = 1
+}
+
+export interface IntegrationAccount {
+	id: string;
+	name: string;
+}
+
+export interface IntegrationApplication {
+	id: string;
+	name: string;
+	icon?: string;
+	description: string;
+	bot?: User;
+}
+
+export type OAuth2Scopes = "activities.read" | "activities.write" | "applications.builds.read" | "applications.builds.upload" | "applications.commands" | "applications.commands.update" | "applications.commands.permissions.update" | "applications.entitlements" | "applications.store.update" | "bot" | "connections" | "dm_channels.read" | "email" | "gdm.join" | "guilds" | "guilds.join" | "guilds.members.read" | "identify" | "messages.read" | "relationships.read" | "rpc" | "rpc.activities.write" | "rpc.notifications.read" | "rpc.voice.read" | "rpc.voice.write" | "voice" | "webhook.incoming";
+
+export interface Integration {
+	/** Integration ID */
+	id: string;
+	/** Integration Name */
+	name: string;
+	/** Integration Type */
+	type: IntegrationType;
+	/** Is this integration enabled */
+	enabled?: boolean;
+	/** Is this integration syncing */
+	syncing?: boolean;
+	/** ID that this integration uses for "subscribers" */
+	role_id?: string;
+	/** Whether emoticons should be synced for this integration (currently twitch only) */
+	enable_emoticons?: boolean;
+	/** The behavior of expiring subscribers */
+	expire_behavior?: IntegrationExpireBehavior;
+	/** The grace period (in days) before expiring subscribers */
+	expire_grace_period?: number;
+	/** User for this integration */
+	user?: User;
+	/** Integration account information */
+	account: IntegrationAccount;
+	/** When this integration was last synced */
+	synced_at?: Date;
+	/** How many subscribers this integration has */
+	subscriber_count?: number;
+	/** Has this integration been revoked */
+	revoked?: boolean;
+	/** The bot/OAuth2 application for discord integrations */
+	application?: IntegrationApplication;
+	/** The scopes the application has been authorized for */
+	scopes?: OAuth2Scopes[];
+}
+
+export interface VoiceState {
+	guild?: Guild;
+	channel_id: string;
+	user: User;
+	member?: GuildMember;
+	session_id: string;
+	deaf: boolean;
+	mute: boolean;
+	self_deaf: boolean;
+	self_mute: boolean;
+	self_stream?: boolean;
+	self_video: boolean;
+	suppress: boolean;
+	request_to_speak_timestamp: Date;
+}
+
+export interface BanObject {
+	user: User;
+	reason?: string;
 }

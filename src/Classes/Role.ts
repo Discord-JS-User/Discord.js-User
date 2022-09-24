@@ -2,7 +2,7 @@ import Client from "../Client";
 import { fillClassValues } from "../utils";
 import Guild from "./Guild";
 
-class Role {
+export default class Role {
 	public client: Client;
 	public guild: Guild;
 
@@ -35,5 +35,3 @@ class Role {
 		if (this.tags?.premium_subscriber === null) this.tags.premium_subscriber = true;
 	}
 }
-
-export default Role;

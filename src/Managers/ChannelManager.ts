@@ -1,4 +1,4 @@
-import { ChannelTypes, ChannelTypesEnum } from "../Types";
+import { ChannelType, ChannelTypes } from "../Types";
 import Guild from "../Classes/Guild";
 import Client from "../Client";
 import AnyChannel from "../Classes/Channels/AnyChannel";
@@ -7,15 +7,36 @@ class ChannelManager {
 	public client: Client;
 	public guild: Guild;
 
-	public cache: Array<ChannelTypesEnum[keyof ChannelTypesEnum]> = [];
-	public rules_channel?: ChannelTypesEnum[keyof ChannelTypesEnum];
-	public system_channel?: ChannelTypesEnum[keyof ChannelTypesEnum];
-	public public_updates_channel?: ChannelTypesEnum[keyof ChannelTypesEnum];
-	public afk_channel?: ChannelTypesEnum[keyof ChannelTypesEnum];
+	public cache: Array<ChannelType> = [];
+	public rules_channel?: ChannelType;
+	public system_channel?: ChannelType;
+	public public_updates_channel?: ChannelType;
+	public afk_channel?: ChannelType;
 
-	constructor(client: Client, guild: Guild) {
+	constructor(client: Client, guild: Guild, data?: any) {
 		this.client = client;
 		this.guild = guild;
+		if (data) this.pushToCache(data);
+	}
+
+	public pushToCache(channels: any | any[]) {
+		if (!Array.isArray(channels)) channels = [channels];
+		const ThreadTypes = [10, 11, 12];
+		for (let channel of channels) {
+			if (channel.parent_id) {
+				let parentChannel = this.cache.find((c2: any) => c2.id == channel.parent_id);
+				if (parentChannel) channel.parent = parentChannel;
+				else {
+					parentChannel = channels.find((c2: any) => c2.id == channel.parent_id);
+					if (parentChannel && !ThreadTypes.includes(parseInt(channel.type))) channel.parent = new ChannelTypes[4](this.client, parentChannel, this.guild);
+					else if (parentChannel) channel.parent = new AnyChannel(this.client, parentChannel, this.guild);
+				}
+			}
+			channel = new (ChannelTypes[channel.type] || AnyChannel)(this.client, channel, this.guild);
+			this.cache.find(c => c.id == channel.id) ? (this.cache[this.cache.indexOf(this.cache.find(c => c.id == channel.id))] = channel) : this.cache.push(channel);
+			this.updateSpecialChannels(channel);
+		}
+		return this.cache;
 	}
 
 	public async fetch(id: string = null, force: boolean = false) {
@@ -25,20 +46,8 @@ class ChannelManager {
 		let fetchedData = await this.client.apiFetch(id ? `/channels/${id}` : `/guilds/${this.guild.id}/channels`);
 		if (!fetchedData) return null;
 		if (!Array.isArray(fetchedData)) fetchedData = [fetchedData];
-		let data: Array<ChannelTypesEnum[keyof ChannelTypesEnum]> = fetchedData.map((c: any) => {
-			if (c.parent_id)
-				c.parent = new ChannelTypes[4](
-					this.client,
-					(id ? this.cache : fetchedData).find((c2: any) => c2.id == c.parent_id),
-					this.guild
-				);
-			return new (ChannelTypes[c.type] || AnyChannel)(this.client, c, this.guild);
-		});
-		data.forEach((channel: any) => {
-			this.cache.find(c => c.id == channel.id) ? (this.cache[this.cache.indexOf(this.cache.find(c => c.id == channel.id))] = channel) : this.cache.push(channel);
-			this.updateSpecialChannels(channel);
-		});
-		return id ? data[0] : data;
+		const data = this.pushToCache(fetchedData);
+		return id ? data.find(i => i.id == id) || data : data;
 	}
 
 	private updateSpecialChannels(data: any) {
@@ -54,6 +63,12 @@ class ChannelManager {
 		if (data.id == this.guild.raw.afk_channel_id) {
 			this.afk_channel = data;
 		}
+	}
+
+	public remove(channel: ChannelType) {
+		const item = this.cache.find(i => i.id == channel.id);
+		if (!item) return channel;
+		return this.cache.splice(this.cache.indexOf(item), 1)[0];
 	}
 }
 

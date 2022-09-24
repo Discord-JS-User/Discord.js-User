@@ -19,6 +19,9 @@ class User {
 	public flags?: number;
 	public public_flags?: number;
 	public nitro_level: 0 | 1 | 2;
+	public bio: string;
+	public banner_color?: string;
+	public avatar_decoration?: unknown;
 
 	constructor(client: Client, data: any) {
 		this.client = client;

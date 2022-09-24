@@ -1,59 +1,46 @@
 import WebSocket from "ws";
-import { EventEmitter } from "node:events";
+import { EventEmitter, once } from "node:events";
 import TypedEmitter from "./Native Modules/TypedEmitter";
-import { apiFetch, genGatewayURL } from "./utils";
-import { APIFetchOptions, ClientLoginOptions, GatewayEventFormat, SessionData, ClientOptions } from "./Types";
+import { apiFetch, genGatewayURL, fetch } from "./utils";
+import { APIFetchOptions, GatewayEventFormat, PresenceStatus } from "./Types";
 import GatewayEvents from "./GatewayEvents";
 import ClientUser from "./Classes/ClientUser";
-import ClientMemberListManager from "./AppElements/MemberList/ClientMemberListManager";
 import GuildManager from "./Managers/GuildManager";
 import Logger from "./Logger";
+import ClientEventHandler from "./ClientEventHandler";
+import User from "./Classes/User";
 
-/**
- * The Client Object
- * @extends {EventEmitter}
- */
-class Client extends (EventEmitter as new () => TypedEmitter<GatewayEvents>) {
-	/**
-	 * Options from the client creation
-	 */
+/** The Client Object */
+export default class Client extends (EventEmitter as new () => TypedEmitter<GatewayEvents>) {
+	/** Options from the client creation */
 	public options: ClientOptions;
-	/**
-	 * Raw Data from the Ready Event
-	 */
+	/** The client event handler */
+	private ClientEventHandler: ClientEventHandler;
+	/** Raw Data from the Ready Event */
 	public readyData: any;
-	/**
-	 * The Logger for the client
-	 * (Only works if debug is enabled)
-	 */
+	/** The Logger for the client (Only works if debug is enabled) */
 	public Logger: Logger;
 	/**
 	 * Whether the client was manually closed using `disconnect()`
 	 * Used to make sure the client does not send the close event and reconnect
 	 */
 	private closed: boolean = false;
+	/** Messages that failed to send due to Gateway Disconnections */
+	private failed_packets: GatewayEventFormat[] = [];
 
-	// Client Options
-
-	/**
-	 * The login options passed for the client
-	 */
+	/** The login options passed for the client */
 	public loginOptions: ClientLoginOptions;
 
-	/**
-	 * The client compressor (zlib-sync or none `(data) => data`)
-	 */
+	/** The client compressor (zlib-sync or none `(data) => data`) */
 	public compressor: {
 		inflate?: any;
-		func: (...args: any[]) => any;
+		decode: (...args: any[]) => any;
 		enabled: boolean;
 	} = {
-		func: (data: any) => data,
+		decode: (data: any) => data,
 		enabled: false
 	};
-	/**
-	 * The client encryptor (JSON or erlpack)
-	 */
+	/** The client encryptor (JSON or erlpack) */
 	public encryptor: {
 		pack: (...args: any) => any;
 		unpack: (...args: any[]) => any;
@@ -64,80 +51,40 @@ class Client extends (EventEmitter as new () => TypedEmitter<GatewayEvents>) {
 		enabled: false
 	};
 
-	/**
-	 * The Client Data Encoder
-	 */
+	/** The Client Data Encoder */
 	public encode: (data: GatewayEventFormat) => any;
-	/**
-	 * The Client Data Decoder
-	 */
+	/** The Client Data Decoder */
 	public decode: (data: any) => GatewayEventFormat;
 
 	// Gateway Items
-	/**
-	 * The session data passed for the client
-	 */
+	/** The session data passed for the client */
 	public sessionData: SessionData;
-	/**
-	 * Whether the client has recieved the ready evnt
-	 */
+	/** Whether the client has recieved the ready evnt */
 	private recievedReady: boolean = false;
-	/**
-	 * This client token
-	 */
+	/** This client token */
 	public token: string;
-	/**
-	 * The session id for the client
-	 */
+	/** The session id for the client */
 	public session_id?: string;
-	/**
-	 * The websocket for the client
-	 */
+	/** The websocket for the client*/
 	private socket: WebSocket;
-	/**
-	 * The gateway url the client is using
-	 * @type {string}
-	 */
+	/** The gateway url the client is using */
 	public gatewayURL: string;
-	/**
-	 * The sequence number the client is on
-	 * @type {number}
-	 */
+	/** The sequence number the client is on */
 	public seq?: number = null;
-	/**
-	 * The client heartbeater
-	 */
+	/** The client heartbeater */
 	private beater: NodeJS.Timer;
-	/**
-	 * The client heartbeat interval
-	 */
+	/** The client heartbeat interval */
 	public heartbeat_interval: number;
-	/**
-	 * The timestamp of the last heartbeat sent by the client
-	 */
-	public last_heartbeat: number = 0;
-	/**
-	 * The timestamp of the last heartbeat ack recieved by the client
-	 */
-	public last_heartbeat_ack: number = 0;
 
 	// User Items
-	/**
-	 * The User for the client
-	 */
+	/** The User for the client */
 	public user: ClientUser;
-	/**
-	 * The MemberListManager for the client
-	 */
-	public memberList: ClientMemberListManager;
-	/**
-	 * Guilds the User is in
-	 */
+	/** Guilds the User is in */
 	public guilds: GuildManager;
+	/** All stored users in this client */
+	public users: User[] = [];
 
-	/**
-	 * Create the client
-	 */
+	/** Create the client */
 	constructor(options: ClientOptions = {}) {
 		super();
 		this.options = options;
@@ -145,6 +92,7 @@ class Client extends (EventEmitter as new () => TypedEmitter<GatewayEvents>) {
 		this.removeAllListeners();
 		this.setMaxListeners(25);
 		this.setupParsing();
+		this.ClientEventHandler = new ClientEventHandler(this);
 	}
 
 	/**
@@ -154,16 +102,12 @@ class Client extends (EventEmitter as new () => TypedEmitter<GatewayEvents>) {
 	 * @returns {Client} The Client
 	 */
 	public async sendMessage(data: GatewayEventFormat): Promise<Client> {
-		if (this.socket.readyState == WebSocket.CLOSING || this.socket.readyState == WebSocket.CLOSED) return this;
+		if (this.socket.readyState == WebSocket.CLOSING || this.socket.readyState == WebSocket.CLOSED) {
+			this.failed_packets.push(data);
+			return this;
+		}
 		if (this.socket.readyState == WebSocket.CONNECTING) {
-			await new Promise(res => {
-				const IntervalID = setTimeout(() => {
-					if (this.socket.readyState === WebSocket.OPEN) {
-						clearInterval(IntervalID);
-						res(void null);
-					}
-				});
-			});
+			await this.awaitEvent("open");
 		}
 		this.socket.send(this.encode(data), err => {
 			if (err) this.Logger.error(err);
@@ -171,9 +115,7 @@ class Client extends (EventEmitter as new () => TypedEmitter<GatewayEvents>) {
 		return this;
 	}
 
-	/**
-	 * Setup the data parsing for the Gateway
-	 */
+	/** Setup the data parsing for the Gateway */
 	private setupParsing() {
 		try {
 			const erlpack = require("erlpack");
@@ -198,29 +140,29 @@ class Client extends (EventEmitter as new () => TypedEmitter<GatewayEvents>) {
 
 		try {
 			const zlib = require("zlib-sync");
-			const inflate = new zlib.Inflate({
-				chunkSize: 65535,
-				flush: zlib.Z_SYNC_FLUSH,
-				to: this.encryptor.enabled ? "" : "string"
-			});
 			this.compressor = {
-				inflate: inflate,
-				func: (data: any) => {
+				inflate: new zlib.Inflate({
+					chunkSize: 65535,
+					flush: zlib.Z_SYNC_FLUSH,
+					to: this.encryptor.enabled ? "" : "string"
+				}),
+				decode: (data: any) => {
 					const l = data.length;
-					this.compressor.inflate.push(data, l >= 4 && data[l - 4] === 0x00 && data[l - 3] === 0x00 && data[l - 2] === 0xff && data[l - 1] === 0xff && zlib.Z_SYNC_FLUSH);
+					const flush = l >= 4 && data[l - 4] === 0x00 && data[l - 3] === 0x00 && data[l - 2] === 0xff && data[l - 1] === 0xff;
+					this.compressor.inflate.push(data, flush && zlib.Z_SYNC_FLUSH);
 					return this.compressor.inflate.result;
 				},
 				enabled: true
 			};
 		} catch {
 			this.compressor = {
-				func: data => data,
+				decode: data => data,
 				enabled: false
 			};
 		}
 
 		this.encode = (data: GatewayEventFormat) => this.encryptor.pack(data);
-		this.decode = (data: any) => this.encryptor.unpack(this.compressor.func(data));
+		this.decode = (data: any) => this.encryptor.unpack(this.compressor.decode(data));
 
 		this.Logger.log(`Compression ${this.compressor.enabled ? "Enabled" : "Disabled"}`);
 		this.Logger.log(`Encryption ${this.encryptor.enabled ? "Enabled" : "Disabled"}`);
@@ -233,7 +175,7 @@ class Client extends (EventEmitter as new () => TypedEmitter<GatewayEvents>) {
 	 * @param {ClientLoginOptions} options The options for the login
 	 * @returns {Client} The Client
 	 */
-	public login(
+	public async login(
 		token: string,
 		sessionData: SessionData = {
 			client_state: {
@@ -257,16 +199,17 @@ class Client extends (EventEmitter as new () => TypedEmitter<GatewayEvents>) {
 			}
 		},
 		options: ClientLoginOptions = {}
-	): Client {
+	): Promise<Client> {
 		if (!token) throw new Error("NO TOKEN SPECIFIED");
 
 		this.loginOptions = options;
 
-		this.gatewayURL = genGatewayURL("wss://gateway.discord.gg", {
-			v: "10",
-			encoding: this.encryptor.enabled ? "etf" : "json",
-			...(this.compressor.enabled ? { compress: "zlib-stream" } : {})
-		});
+		if (!this.gatewayURL)
+			this.gatewayURL = genGatewayURL((await fetch("https://discord.com/api/v10/gateway")).data.url, {
+				v: "10",
+				encoding: this.encryptor.enabled ? "etf" : "json",
+				...(this.compressor.enabled ? { compress: "zlib-stream" } : {})
+			});
 
 		this.Logger.log("Gateway URL: " + this.gatewayURL);
 
@@ -276,9 +219,16 @@ class Client extends (EventEmitter as new () => TypedEmitter<GatewayEvents>) {
 
 		this.socket.onopen = (openEvent: WebSocket.Event) => {
 			this.closed = false;
+			this.failed_packets.forEach(packet =>
+				this.socket.send(this.encode(packet), err => {
+					if (err) this.Logger.error(err);
+				})
+			);
+			this.failed_packets = [];
 			this.emit("open", openEvent);
 		};
 		this.socket.onclose = (closeEvent: WebSocket.CloseEvent) => {
+			this.Logger.warn(`Closed with Code: ${closeEvent.code} and Reason: ${closeEvent.reason}`);
 			if (this.closed) return;
 			else {
 				this.closed = true;
@@ -300,7 +250,12 @@ class Client extends (EventEmitter as new () => TypedEmitter<GatewayEvents>) {
 		};
 
 		this.socket.onmessage = async (event: WebSocket.MessageEvent) => {
-			const data: GatewayEventFormat = this.decode(event.data);
+			let data: GatewayEventFormat;
+			try {
+				data = this.decode(event.data);
+			} catch (err) {
+				return this.Logger.error("Encountered Error While Parsing Gateway Message:\n\n\n", event.data, "\n\n\n", err, "\n\n\n");
+			}
 			this.emit("message", data);
 
 			if (data.s) this.seq = data.s;
@@ -318,36 +273,14 @@ class Client extends (EventEmitter as new () => TypedEmitter<GatewayEvents>) {
 				case 0: // Dispatch
 					let eventData = data.d;
 
-					switch (data.t.toUpperCase()) {
-						case "READY":
-							this.readyData = data.d;
-							this.user = new ClientUser(this, data.d);
-							this.session_id = data.d.session_id;
-							this.gatewayURL = data.d.resume_gateway_url;
-							this.memberList = new ClientMemberListManager(this);
-							this.guilds = new GuildManager(this, data.d.guilds);
-							for (const guild of this.guilds.cache) {
-								await guild.channels.fetch();
-							}
-							break;
-						case "RESUMED":
-							this.Logger.log("Resumed Successfully");
-							break;
-						case "GUILD_MEMBER_LIST_UPDATE":
-							eventData = [];
-							for (var op of data.d.ops) {
-								op.guild_id = data.d.guild_id;
-								op.id = data.d.id;
-								if (this.memberList[op.op.toLowerCase()]) {
-									await this.memberList[op.op.toLowerCase()](op);
-									eventData.push(...this.memberList.guilds.find(i => i.id == op.guild_id).channels.filter(i => i.list_id == op.id));
-								}
-							}
-							break;
-						case "SESSIONS_REPLACE":
-							eventData = this.user.sessions._update(data.d);
-							break;
-					}
+					if (data.t.toUpperCase() !== "READY" && this.recievedReady === false) await this.awaitEvent("ready");
+
+					const handler = this.ClientEventHandler[data.t.toUpperCase()];
+
+					if (handler) eventData = await handler.bind(this.ClientEventHandler)(data);
+
+					if (eventData === null) break;
+					if (eventData === undefined) eventData = data.d;
 
 					if (data.t == "READY") {
 						if (this.recievedReady) break;
@@ -376,7 +309,7 @@ class Client extends (EventEmitter as new () => TypedEmitter<GatewayEvents>) {
 					this.identify();
 					break;
 				case 11: // Heartbeat Acknowledge
-					this.last_heartbeat_ack = Date.now();
+					this.emit("heartbeatAck");
 					break;
 			}
 		};
@@ -409,7 +342,8 @@ class Client extends (EventEmitter as new () => TypedEmitter<GatewayEvents>) {
 				d: {
 					token: this.token,
 					capabilities: 509,
-					compress: false,
+					compress: this.compressor.enabled,
+					large_threshold: 250,
 					...this.sessionData
 				}
 			});
@@ -455,7 +389,6 @@ class Client extends (EventEmitter as new () => TypedEmitter<GatewayEvents>) {
 		if (!this.heartbeat_interval) return this;
 		setTimeout(() => this.heartbeat(), 5000);
 		this.beater = setInterval(() => this.heartbeat(), this.heartbeat_interval);
-
 		return this;
 	}
 
@@ -463,20 +396,18 @@ class Client extends (EventEmitter as new () => TypedEmitter<GatewayEvents>) {
 	 * Sends a heartbeat to the gateway
 	 * @returns {Client} The Client
 	 */
-	public heartbeat(): Client {
-		this.Logger.log("Sending Heartbeat");
+	public async heartbeat(): Promise<Client> {
+		if (this.options.logHeartbeats) this.Logger.log("Sending Heartbeat");
 		this.sendMessage({ op: 1, d: this.seq });
-		this.last_heartbeat = Date.now();
-		setTimeout(() => {
-			if (this.closed) return;
-			if (this.last_heartbeat > this.last_heartbeat_ack) {
-				this.Logger.log("Failed To Recieve Heartbeat Ack");
-				this.reconnect();
-			} else {
-				this.Logger.log("Recieved Heartbeat Ack");
-			}
-		}, 5000);
-
+		this.emit("heartbeatSend");
+		const recieved = await this.awaitEvent("heartbeatAck", 7500);
+		if (recieved) {
+			if (this.options.logHeartbeats) this.Logger.log("Recieved Heartbeat Ack");
+			this.emit("heartbeatAck");
+		} else {
+			this.Logger.log("Failed To Recieve Heartbeat Ack");
+			this.reconnect();
+		}
 		return this;
 	}
 
@@ -501,6 +432,121 @@ class Client extends (EventEmitter as new () => TypedEmitter<GatewayEvents>) {
 		this.socket.close(1000);
 		this.emit("disconnect");
 	}
+
+	/**
+	 * Await a gateway message (With Typings)
+	 * @param event The event
+	 * @optional @param timeout A timeout for the await
+	 * @returns The data from the event OR null if failed
+	 */
+	public async awaitEvent(event: keyof GatewayEvents, timeout?: number): Promise<any> {
+		return await this.awaitRawEvent(event, timeout);
+	}
+
+	/**
+	 * Await a gateway message (Without Typings)
+	 * @param event The event
+	 * @optional @param timeout A timeout for the await
+	 * @returns The data from the event OR null if failed
+	 */
+	public async awaitRawEvent(event: string, timeout?: number): Promise<any> {
+		const aborter = new AbortController();
+		if (timeout) setTimeout(() => aborter.abort(`Hit Timeout Of ${timeout}ms`), timeout);
+		try {
+			return await once(this, event, { signal: aborter.signal });
+		} catch {
+			return null;
+		}
+	}
+
+	/**
+	 * Push a user to the cache
+	 * @param {User} user The user to push
+	 * @returns {User} The pushed user
+	 */
+	public pushUser(user: User): User {
+		if (this.users.find(i => i.id == user.id)) {
+			this.users[this.users.indexOf(this.users.find(i => i.id == user.id))] = user;
+		} else {
+			this.users.push(user);
+		}
+		return user;
+	}
+
+	/**
+	 * Create a client user (And push it)
+	 * @param data The user data
+	 * @returns {User} The created user
+	 */
+	public createUser(data: any): User {
+		const user = new User(this, data);
+		this.pushUser(user);
+		return user;
+	}
+
+	/**
+	 * Fetch a User from the API or from the Cache (And push it)
+	 * @param id The user id
+	 * @param force Set to `false` (or don't set) to allow checking through the cache before fetching from the API
+	 * @returns {User} The user
+	 */
+	public async getUser(id: string, force: boolean = false): Promise<User> {
+		if (!force) if (this.users.find(i => i.id == id)) return this.users.find(i => i.id == id);
+		const data = await this.apiFetch(`/users/${id}`);
+		const user = new User(this, data);
+		this.pushUser(user);
+		return user;
+	}
 }
 
-export default Client;
+/** Session Data for the client login */
+export interface SessionData {
+	client_state?: {
+		guild_hashes?: Object;
+		highest_last_message_id?: string;
+		read_state_version?: number;
+		user_guild_settings_version?: number;
+		user_settings_version?: number;
+	};
+	properties: {
+		browser: "Discord Desktop" | "Discord Android" | string;
+		browser_user_agent?: string;
+		client_build_number?: string;
+		client_event_source?: unknown;
+		client_version?: string;
+		browser_version?: string;
+		device?: string;
+		device_id?: string;
+		distro?: string;
+		os: "Windows" | "Linux" | "OSX" | "iOS" | "Android" | string;
+		os_arch?: string;
+		os_version?: string;
+		referrer?: string;
+		referrer_current?: string;
+		referring_domain?: string;
+		referring_domain_current?: string;
+		release_channel?: string;
+		window_manager?: string;
+		system_locale?: string;
+	};
+	presence?: {
+		activities: object[];
+		afk: boolean;
+		since: number;
+		status: PresenceStatus;
+	};
+}
+
+/** Options for the client login */
+export interface ClientLoginOptions {}
+
+/** Options for the client constructor */
+export interface ClientOptions {
+	/** Enable Debug Logging */
+	debug?: boolean;
+	/**
+	 * Enable logging for heartbeats and heartbeat acks
+	 * (ONLY WORKS WITH `debug` ENABLED)
+	 */
+	logHeartbeats?: boolean;
+}

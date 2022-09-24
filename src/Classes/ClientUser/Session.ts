@@ -5,6 +5,7 @@ import PresenceActivity from "../Presence/PresenceActivity";
 
 export default class Session {
 	public client: Client;
+	public isClientSession: boolean;
 
 	public status: PresenceStatus;
 	public session_id: "all" | string;
@@ -24,5 +25,7 @@ export default class Session {
 				activities: d => d.map(i => new PresenceActivity(this.client, i))
 			}
 		);
+
+		this.isClientSession = this.session_id == this.client.session_id;
 	}
 }

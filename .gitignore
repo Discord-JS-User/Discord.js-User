@@ -1,9 +1,6 @@
-node_modules/
-dist/
-test/
+node_modules
+dist
+test
 dump.json
-ChannelTypeExample.json
-docgen/
-docs/docgen
-docs/docgen.js
-!docs/dist
+dump2.json
+dump2.txt

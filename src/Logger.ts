@@ -6,7 +6,7 @@ import chalk from "./Native Modules/chalk";
 export default class Logger {
 	public enabled: boolean = false;
 
-	constructor(enabled: boolean) {
+	constructor(enabled: boolean = false) {
 		this.enabled = enabled;
 	}
 
