@@ -529,7 +529,7 @@ export interface SessionData {
 	presence?: {
 		activities: object[];
 		afk: boolean;
-		since: number;
+		since: number | null;
 		status: PresenceStatus;
 	};
 }
