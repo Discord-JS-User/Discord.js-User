@@ -192,14 +192,14 @@ export function genGatewayURL(
 
 /**
  * Fills a Class's Values
- * @param {any} c The Class
+ * @param {unknown} c The Class
  * @param data The data to fill
  * @param aliases Aliases `{'Name In Class': 'Name In Data'}`
  * @param parsers Parsers `{'Name In Class': (data) => data}`
  * @param ignore Ignore `['Name In Class', 'Name In Class']`
  */
 export function fillClassValues(
-	c: any,
+	c: unknown,
 	data: {
 		[key: string]: any;
 	},
@@ -207,16 +207,17 @@ export function fillClassValues(
 		[key: string]: string;
 	} = {},
 	parsers: {
-		[key: string]: Function;
+		[key: string]: (value: any) => any;
 	} = {},
 	ignore: Array<string> = []
-) {
+): unknown {
 	for (const field of Object.keys(c).filter(i => i != "client" && i != "guild" && !ignore.includes(i))) {
 		const parser = parsers[field];
 		const info = data[aliases[field] || field];
 		if (info === undefined && parser === undefined) continue;
 		c[field] = parser ? parser(info) : info;
 	}
+	return c;
 }
 
 /**
@@ -225,6 +226,7 @@ export function fillClassValues(
  * @returns A Promise that resolves after the specified amount of time
  */
 export function wait(time: number = 0): Promise<void> {
-	if (typeof time != "number") throw new TypeError(`Time Argument \`${time}\` Is Not A Number`);
+	if (typeof time == "string") time = parseInt(time);
+	if (typeof time != "number" || time == NaN) throw new TypeError(`Time Argument \`${time}\` Is Not A Number`);
 	return new Promise(res => setTimeout(res, time));
 }

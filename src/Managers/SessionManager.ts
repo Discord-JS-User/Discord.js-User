@@ -1,20 +1,27 @@
 import Session from "../Classes/ClientUser/Session";
 import Client from "../Client";
-import { Collection } from "@discord.js-user/utility";
+import { Collection } from "@djs-user/utility";
+import BaseManager from "../BaseClasses/BaseManager";
 
-export default class SessionManager {
-	public client: Client;
-
-	public cache: Collection<Session> = new Collection<Session>();
-
-	constructor(client: Client, data: any) {
-		this.client = client;
-
-		this.cache.push(...data.map(i => new Session(this.client, i)));
+/** A Manager for Client Sessions */
+export default class SessionManager extends BaseManager<Session> {
+	/**
+	 * A Manager for Client Sessions
+	 * @param client The Client
+	 * @param sessions The Sessions
+	 */
+	constructor(client: Client, sessions: any) {
+		super(client);
+		this.cache.push(...sessions.map(i => new Session(this.client, i)));
 	}
 
-	public _update(data: any[]): Collection<Session> {
-		this.cache = new Collection<Session>(data.map(i => new Session(this.client, i)));
+	/**
+	 * Update the Sessions
+	 * @param sessions The New Sessions
+	 * @returns The updated cache
+	 */
+	public update(sessions: any[]): Collection<Session> {
+		this.cache = new Collection<Session>(sessions.map(i => new Session(this.client, i)));
 		return this.cache;
 	}
 }

@@ -2,24 +2,39 @@ import { ChannelType, ChannelTypes } from "../Types";
 import Guild from "../Classes/Guild";
 import Client from "../Client";
 import AnyChannel from "../Classes/Channels/AnyChannel";
-import { Collection } from "@discord.js-user/utility";
+import BaseManager from "../BaseClasses/BaseManager";
 
-class ChannelManager {
-	public client: Client;
+/** A Manager for Guild Channels */
+class ChannelManager extends BaseManager<ChannelType> {
+	/** The Guild */
 	public guild: Guild;
 
-	public readonly cache: Collection<ChannelType> = new Collection<ChannelType>();
+	/** The Guild Rules Channel */
 	public rules_channel?: ChannelType;
+	/** The Guild System Updates Channel */
 	public system_channel?: ChannelType;
+	/** The Guild Public Updates Channel */
 	public public_updates_channel?: ChannelType;
+	/** The Guild AFK Channel */
 	public afk_channel?: ChannelType;
 
+	/**
+	 * A Manager for Guild Channels
+	 * @param client The Client
+	 * @param guild The Guild
+	 * @param data Data to fill (only if you have it)
+	 */
 	constructor(client: Client, guild: Guild, data?: any) {
-		this.client = client;
+		super(client);
 		this.guild = guild;
 		if (data) this.pushToCache(data);
 	}
 
+	/**
+	 * Push one or more channels to the cache
+	 * @param channels The channels
+	 * @returns The updated cache
+	 */
 	public pushToCache(channels: any | any[]) {
 		if (!Array.isArray(channels)) channels = [channels];
 		const ThreadTypes = [10, 11, 12];
@@ -40,7 +55,14 @@ class ChannelManager {
 		return this.cache;
 	}
 
+	/**
+	 * Fetch one or all of the channels
+	 * @param id The Channel ID (If none is specified, returns all of them)
+	 * @param force Whether to force the fetch (only if an ID is specified)
+	 * @returns The updated cache OR the channel that has the specified ID
+	 */
 	public async fetch(id: string = null, force: boolean = false) {
+		if (id && typeof id != "string") throw new TypeError(`ID Value (\`${id}\`) Is Not A String`);
 		if (id && !force) {
 			if (this.cache.find(i => i.id == id)) return this.cache.find(i => i.id == id);
 		}
@@ -66,6 +88,11 @@ class ChannelManager {
 		}
 	}
 
+	/**
+	 * Remove a channel from the cache
+	 * @param channel The channel to remove
+	 * @returns The removed channel
+	 */
 	public remove(channel: ChannelType) {
 		const item = this.cache.find(i => i.id == channel.id);
 		if (!item) return channel;

@@ -1,58 +1,85 @@
-import { Collection } from "@discord.js-user/utility";
+import { Collection } from "@djs-user/utility";
 import Client from "../../Client";
 import { CustomStatus, PresenceData, PresenceStatus } from "../../Types";
 import PresenceActivity from "../Presence/PresenceActivity";
 
+/** Presence for the Client User */
 export default class ClientUserPresence {
+	/** The client */
 	public client: Client;
 
-	/**
-	 * The Activites
-	 */
+	/** The Activites */
 	public activities: Collection<PresenceActivity> = new Collection<PresenceActivity>();
-	/**
-	 * AFK Or Not
-	 */
+	/** AFK Or Not */
 	public afk: boolean = false;
-	/**
-	 * State Since
-	 */
-	public since: number = 0;
-	/**
-	 * Status
-	 */
+	/** State Since */
+	public since: number | null = null;
+	/** Status */
 	public status: PresenceStatus = "online";
 
+	/**
+	 * Presence for the Client User
+	 * @param client The client
+	 */
 	constructor(client: Client) {
 		this.client = client;
 	}
 
-	public setActivity(data: PresenceData, clear: boolean = false) {
+	/**
+	 * Add (or Edit) an activity for the user
+	 * @param data The Data for the activity
+	 * @param clear Whether it should just clear the activity and ignore the data
+	 * @returns The New Presence
+	 */
+	public setActivity(data: PresenceData, clear: boolean = false): this {
 		this.activities = this.activities.filter(i => i.name != data.name);
 		if (clear) return this.updatePresence();
 		this.activities.push(new PresenceActivity(this.client, data));
-		this.updatePresence();
+		return this.updatePresence();
 	}
 
-	public setAKF(afk: boolean) {
+	/**
+	 * Set whether the client is AFK
+	 * @param afk Whether the client is AFK
+	 * @returns The New Presence
+	 */
+	public setAKF(afk: boolean): this {
 		this.afk = afk;
+		if (this.afk) this.since = Date.now();
+		else this.since = null;
+		return this.updatePresence();
 	}
 
-	public setStatus(status: PresenceStatus) {
+	/**
+	 * Set the client status
+	 * @param status The status ("online" or "offline" or "idle" or "dnd" or "invisible")
+	 * @returns The New Presence
+	 */
+	public setStatus(status: PresenceStatus): this {
 		this.status = status;
-		this.since = Date.now();
+		return this.updatePresence();
 	}
 
-	public setCustomStatus(status: CustomStatus, clear: boolean = false) {
+	/**
+	 * Set the Custom Status for the Client
+	 * @param status The Custom Status
+	 * @param clear Whether it should just clear the activity and ignore the data
+	 * @returns The New Presence
+	 */
+	public setCustomStatus(status: CustomStatus, clear: boolean = false): this {
 		status.name = "Custom Status";
 		status.type = 4;
 		this.activities = this.activities.filter(i => i.name != status.name);
 		if (clear) return this.updatePresence();
 		this.activities.push(new PresenceActivity(this.client, status));
-		this.updatePresence();
+		return this.updatePresence();
 	}
 
-	public updatePresence() {
+	/**
+	 * Send an update in the presence
+	 * @returns The Presence
+	 */
+	public updatePresence(): this {
 		this.client.sendMessage({
 			op: 3,
 			d: {
@@ -62,5 +89,6 @@ export default class ClientUserPresence {
 				status: this.status
 			}
 		});
+		return this;
 	}
 }

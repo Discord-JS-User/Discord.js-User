@@ -2,14 +2,13 @@ import Session from "./Classes/ClientUser/Session";
 import WebSocket from "ws";
 import GuildMember from "./Classes/GuildMember";
 import Guild from "./Classes/Guild";
-import { BanObject, GuildScheduledEvent } from "./Types";
+import { BanObject, ChannelType, GuildScheduledEvent } from "./Types";
 import Role from "./Classes/Role";
 import User from "./Classes/User";
-import { Channel } from "diagnostics_channel";
-import { Collection } from "@discord.js-user/utility";
+import { Collection } from "@djs-user/utility";
 
-/** The events for the Client Connection */
-export default interface GatewayEvents {
+/** The Events that the Client can Send */
+type GatewayEvents = {
 	open: (openEvent: WebSocket.Event) => void;
 	close: (closeEvent: WebSocket.CloseEvent) => void;
 	disconnect: () => void;
@@ -21,9 +20,9 @@ export default interface GatewayEvents {
 	sessions_replace: (sessions: Collection<Session>) => void;
 	presence_update: (member: GuildMember) => void;
 
-	channel_create: (channel: Channel) => void;
-	channel_update: (channel: Channel) => void;
-	channel_delete: (channel: Channel) => void;
+	channel_create: (channel: ChannelType) => void;
+	channel_update: (channel: ChannelType) => void;
+	channel_delete: (channel: ChannelType) => void;
 
 	guild_create: (guild: Guild) => void;
 	guild_update: (guild: Guild) => void;
@@ -48,4 +47,6 @@ export default interface GatewayEvents {
 	guild_scheduled_event_delete: (event: GuildScheduledEvent) => void;
 	guild_scheduled_event_user_add: (user: User | null) => void;
 	guild_scheduled_event_user_remove: (user: User | null) => void;
-}
+};
+
+export default GatewayEvents;

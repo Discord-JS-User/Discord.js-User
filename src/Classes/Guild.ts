@@ -1,58 +1,108 @@
 import Client from "../Client";
 import GuildMemberManager from "../Managers/GuildMemberManager";
-import { GuildScheduledEvent, GuildFeature, Sticker, GuildNSFWLevel, Emoji, VoiceState } from "../Types";
+import { GuildScheduledEvent, GuildFeature, Sticker, GuildNSFWLevel, Emoji, VoiceState, AFKTimeout, GuildMFA, GuildBoostLevel, GuildVerificationLevel, GuildExplicitContentFilter, MessageNotificationLevel } from "../Types";
 import GuildMember from "./GuildMember";
 import ChannelManager from "../Managers/ChannelManager";
 import RoleManager from "../Managers/RoleManager";
 import { fillClassValues } from "../utils";
 import { BanManager } from "../Managers/MiniManagers";
-import { Collection } from "@discord.js-user/utility";
+import { Collection } from "@djs-user/utility";
 
+/** A Guild */
 class Guild {
-	public client: Client;
-
+	/** Raw Data for the Guild */
 	public raw: any;
 
+	/** The Client */
+	public client: Client;
+
+	/** The Guild ID */
 	public id: string;
+	/** The Guild Name */
 	public name: string;
+	/** The Guild Description */
 	public description?: string;
+	/** The Guild Icon Hash */
 	public icon?: string;
+	/** The Guild Banner Hash */
 	public banner?: string;
+	/** The Member Manager for the Guild */
 	public members: GuildMemberManager;
+	/** The Guild Owner */
 	public owner: GuildMember;
-	public afk_timeout: number;
+	/** The Voice AFK Timeout (In Seconds) */
+	public afk_timeout: AFKTimeout;
+	/** The Scheduled Events for the Guild */
 	public scheduled_events: Collection<GuildScheduledEvent>;
+	/** Flags for the System Channel in the Guild */
 	public system_channel_flags: number;
+	/** Features for the Guild */
 	public features: Collection<GuildFeature>;
-	public mfa: 0 | 1;
+	/** The MFA Level for the Guild */
+	public mfa: GuildMFA;
+	/** Stickers for the Guild */
 	public stickers: Collection<Sticker>;
+	/** The NSFW Level for the Guild */
 	public nsfw_level: GuildNSFWLevel;
+	/** Whether the Guild is NSFW */
 	public nsfw: boolean;
+	/** Whether the Guild is considered Large */
 	public large: boolean;
+	/** The Preferred Locale of a Community Guild */
 	public preferred_locale: string;
+	/** The number of boosts the Guild has */
 	public boosts: number;
-	public boost_tier: 0 | 1 | 2 | 3;
+	/** The Guild Boost Tier */
+	public boost_tier: GuildBoostLevel;
+	/** The Guild Member Count */
 	public member_count: number;
+	/** When the User joined the Guild */
 	public joined_at: Date;
+	/** The max number of Users that can be in a Video Channel in the Guild */
 	public max_video_channel_users: number;
+	/** The Guild Splash Hash */
 	public splash?: string;
+	/** The Emojis for the Guild */
 	public emojis: Collection<Emoji>;
 	public application_command_counts: { [key: string]: number };
-	public verification_level: number;
+	/** The Verification Level Required For The Guild */
+	public verification_level: GuildVerificationLevel;
+	/** The Discovery Splash Hash */
 	public discovery_splash?: string;
-	public explicit_content_filter: number;
+	/** The Explicit Content Filter Level */
+	public explicit_content_filter: GuildExplicitContentFilter;
+	/** The Vanity URL Code (Ex: `https://discord.gg/${guild.vanity_url_code}`) */
 	public vanity_url_code?: string;
+	/** The Vanity URL */
 	public vanity_url?: string;
+	/** Whether the Guild should be Lazy Loaded */
 	public lazy: boolean;
+	/** Whether the Guild shows the Boost Bar */
 	public boost_bar_enabled: boolean;
+	/** The maximum number of member the Guild can have */
 	public max_members: number;
-	public default_message_notifications: number;
+	/** The default message notification level */
+	public default_message_notifications: MessageNotificationLevel;
+	/** The Channels for the Guild */
 	public channels: ChannelManager;
+	/** The Roles for the Guild */
 	public roles: RoleManager;
+	/** Whether the Guild is unavailable due to an outage */
 	public unavailable: boolean;
+	/** Voice States for the Guild */
 	public voice_states: Collection<VoiceState>;
+	/** Bans for the Guild */
 	public bans: BanManager;
+	/** The approximate number of Members in the Guild */
+	public approximate_member_count?: number;
+	/** The approximate number of Member Presences in the Guild */
+	public approximate_presence_count?: number;
 
+	/**
+	 * A Guild
+	 * @param client The Client
+	 * @param data Data to fill
+	 */
 	constructor(client: Client, data: any) {
 		this.client = client;
 		this.setup(data);
@@ -126,8 +176,13 @@ class Guild {
 
 		if (data.threads) this.channels.pushToCache(data.threads);
 		if (data.presences) for (const presence of data.presences) this.members.cache.find(i => i.id == presence.user.id)?._updatePresence(presence);
+		this.owner = await this.members.fetchSingle(data.owner_id);
 	}
 
+	/**
+	 * Fetch and Update the Guild
+	 * @returns The Raw Fetch Response (Not Parsed To A Guild Object)
+	 */
 	public async fetch(): Promise<{ [key: string]: any }> {
 		const data = await this.client.apiFetch(`/guilds/${this.id}`, {
 			queryParams: ["with_counts=true"]

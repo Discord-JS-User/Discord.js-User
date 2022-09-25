@@ -34,8 +34,8 @@ export default class ClientEventHandler {
 		}
 	}
 
-	public RESUMED(data) {
-		this.Logger.log("Resumed Successfully", data);
+	public RESUMED() {
+		this.Logger.log("Resumed Successfully");
 	}
 
 	public async PRESENCE_UPDATE(data) {
@@ -48,7 +48,7 @@ export default class ClientEventHandler {
 	}
 
 	public SESSIONS_REPLACE(data) {
-		return this.client.user.sessions._update(data.d);
+		return this.client.user.sessions.update(data.d);
 	}
 
 	public CHANNEL_CREATE(data) {
@@ -161,6 +161,7 @@ export default class ClientEventHandler {
 		if (!event) return null;
 		const user = await this.client.getUser(data.d.user_id);
 		guild.scheduled_events.get(event.id).subscribers.push(user);
+		guild.scheduled_events.get(event.id).user_count += 1;
 		return user;
 	}
 	public async GUILD_SCHEDULED_EVENT_USER_REMOVE(data) {
@@ -170,6 +171,7 @@ export default class ClientEventHandler {
 		const user = await this.client.getUser(data.d.user_id);
 		const subscribers = guild.scheduled_events.get(event.id).subscribers;
 		if (!subscribers.find(i => i.id == user.id)) return user;
+		guild.scheduled_events.get(event.id).user_count -= 1;
 		return guild.scheduled_events.get(event.id).subscribers.splice(subscribers.indexOf(subscribers.find(i => i.id == user.id)), 1)[0];
 	}
 }

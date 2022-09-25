@@ -1,21 +1,36 @@
-import { Collection } from "@discord.js-user/utility";
+import { Collection } from "@djs-user/utility";
 import Client from "../../Client";
 import { Integration } from "../../Types";
 import { fillClassValues } from "../../utils";
 
+/** A Connection for the Client User */
 export default class Connection {
+	/** The client */
 	public client: Client;
 
+	/** The Connection ID */
 	public id: string;
+	/** The Connection Name */
 	public name: string;
-	public type: string | number;
+	/** The Connection Type */
+	public type: string;
+	/** Whether the connection was revoked */
 	public revoked: boolean;
+	/** Integrations for the connection */
 	public integrations?: Collection<Integration>;
+	/** Whether the connection is verified */
 	public verified: boolean;
 	public friend_sync: boolean;
+	/** Whether to show the connection activity on the User's Profile */
 	public show: boolean;
+	/** The visibility of the connection */
 	public visibility: 0 | 1;
 
+	/**
+	 * A Connection for the Client User
+	 * @param client The client
+	 * @param data Data to fill
+	 */
 	constructor(client: Client, data: any) {
 		this.client = client;
 
@@ -23,7 +38,7 @@ export default class Connection {
 			this,
 			data,
 			{
-				show: "show_activitiy"
+				show: "show_activity"
 			},
 			{
 				revoked: i => !!i,

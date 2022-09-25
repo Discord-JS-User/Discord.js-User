@@ -1,6 +1,6 @@
 import WebSocket from "ws";
 import { EventEmitter, once } from "node:events";
-import TypedEmitter from "./Native Modules/TypedEmitter";
+import TypedEmitter from "typed-emitter";
 import { apiFetch, genGatewayURL, fetch, wait } from "./utils";
 import { APIFetchOptions, GatewayEventFormat, PresenceStatus } from "./Types";
 import GatewayEvents from "./GatewayEvents";
@@ -9,12 +9,14 @@ import GuildManager from "./Managers/GuildManager";
 import Logger from "./Logger";
 import ClientEventHandler from "./ClientEventHandler";
 import User from "./Classes/User";
-import { Collection } from "@discord.js-user/utility";
+import { Collection } from "@djs-user/utility";
 
-/** The Client Object */
+/** A Discord.js User Client */
 export default class Client extends (EventEmitter as new () => TypedEmitter<GatewayEvents>) {
 	/** Options from the client creation */
 	public options: ClientOptions;
+	/** The login options passed for the client */
+	public loginOptions: ClientLoginOptions;
 	/** The client event handler */
 	private ClientEventHandler: ClientEventHandler;
 	/** Raw Data from the Ready Event */
@@ -28,9 +30,6 @@ export default class Client extends (EventEmitter as new () => TypedEmitter<Gate
 	private closed: boolean = false;
 	/** Messages that failed to send due to Gateway Disconnections */
 	private failed_packets: Collection<GatewayEventFormat> = new Collection<GatewayEventFormat>();
-
-	/** The login options passed for the client */
-	public loginOptions: ClientLoginOptions;
 
 	/** The client compressor (zlib-sync or none `(data) => data`) */
 	public compressor: {
@@ -51,13 +50,11 @@ export default class Client extends (EventEmitter as new () => TypedEmitter<Gate
 		unpack: JSON.parse,
 		enabled: false
 	};
-
 	/** The Client Data Encoder */
 	public encode: (data: GatewayEventFormat) => any;
 	/** The Client Data Decoder */
 	public decode: (data: any) => GatewayEventFormat;
 
-	// Gateway Items
 	/** The session data passed for the client */
 	public sessionData: SessionData;
 	/** Whether the client has recieved the ready evnt */
@@ -77,7 +74,6 @@ export default class Client extends (EventEmitter as new () => TypedEmitter<Gate
 	/** The client heartbeat interval */
 	public heartbeat_interval: number;
 
-	// User Items
 	/** The User for the client */
 	public user: ClientUser;
 	/** Guilds the User is in */
@@ -85,7 +81,10 @@ export default class Client extends (EventEmitter as new () => TypedEmitter<Gate
 	/** All stored users in this client */
 	public readonly users: Collection<User> = new Collection<User>();
 
-	/** Create the client */
+	/**
+	 * A Discord.js User Client
+	 * @param options Options for making the client
+	 */
 	constructor(options: ClientOptions = {}) {
 		super();
 		this.options = options;

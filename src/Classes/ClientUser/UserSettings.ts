@@ -1,23 +1,38 @@
 import Client from "../../Client";
 import { CustomStatus, ExplicitContentFilter, FriendSourceFlags, GuildFolder, PresenceStatus, StickerAnimate, Theme } from "../../Types";
 
+/** Settings for the Client User */
 export default class UserSettings {
+	/** The Client */
 	public client: Client;
 
+	/** The Settings */
 	public data: UserSettingsObject;
 
+	/**
+	 * Settings for the Client User
+	 * @param client The Client
+	 * @param data The Settings
+	 */
 	constructor(client: Client, data: any) {
 		this.client = client;
 
 		this.data = data;
 	}
 
+	/**
+	 * Fetch and update the data
+	 * @returns The updated data
+	 */
 	public async fetch(): Promise<UserSettingsObject> {
-		const data = await this.client.apiFetch("/users/@me/settings");
-		this.data = data;
+		this.data = await this.client.apiFetch("/users/@me/settings");
 		return this.data;
 	}
 
+	/**
+	 * Push the settings to the API
+	 * @returns The return data from the request
+	 */
 	public async push() {
 		return await this.client.apiFetch("/users/@me/settings", {
 			method: "PATCH",
