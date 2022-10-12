@@ -1,5 +1,6 @@
 .git
 .github
+docs
 src
 test
-fix-docgen.js
+SETUP.md

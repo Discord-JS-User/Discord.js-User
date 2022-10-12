@@ -2,7 +2,7 @@ import Connection from "../Classes/ClientUser/Connection";
 import Guild from "../Classes/Guild";
 import Client from "../Client";
 import { BanObject } from "../Types";
-import { Collection } from "@djs-user/utility";
+import { Collection } from "@djs-user/collection";
 import BaseManager from "../BaseClasses/BaseManager";
 
 /** A Manager for Guild Bans */

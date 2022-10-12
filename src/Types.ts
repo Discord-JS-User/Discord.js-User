@@ -6,7 +6,7 @@ import GuildAnnouncementChannel from "./Classes/Channels/Specific/GuildAnnouncem
 import GuildStageChannel from "./Classes/Channels/Specific/GuildStageChannel";
 import GuildForumChannel from "./Classes/Channels/Specific/GuildForumChannel";
 import GuildMember from "./Classes/GuildMember";
-import { BodyInit } from "node-fetch";
+import { BodyInit, HeadersInit } from "node-fetch";
 import Guild from "./Classes/Guild";
 import GuildChannel from "./Classes/Channels/GuildChannel";
 import BaseChannel from "./BaseClasses/BaseChannel";
@@ -64,6 +64,8 @@ export interface APIFetchOptions {
 	queryParams?: Array<string>;
 	/** Body for the request */
 	body?: BodyInit;
+	/** Extra headers for the request */
+	headers?: HeadersInit;
 }
 
 /**
@@ -750,5 +752,109 @@ export enum MessageNotificationLevel {
 	/** All Messages */
 	ALL_MESSAGES = 0,
 	/** Only Messages Where The User Is Mentioned */
-	ONLY_MENTIONS = 1
+	ONLY_MENTIONS = 1,
+	/** No Messages */
+	NOTHING = 2
+}
+
+/**
+ * The Selected Time Window for a Mute Config (In Seconds)
+ * @readonly
+ * @enum {number}
+ */
+export enum MuteConfigSelectedTimeWindow {
+	/** Until you turn it off */
+	FOREVER = -1,
+	/** For Fifteen Minutes */
+	FIFTEEN_MINS = 900,
+	/** For One Hour */
+	ONE_HOUR = 3600,
+	/** For Three Hours */
+	THREE_HOURS = 10800,
+	/** For Eight Hours */
+	EIGHT_HOURSE = 28800,
+	/** For 24 Hours/One Day */
+	ONE_DAY = 86400
+}
+
+/** The Mute Config for a Channel Override */
+export interface MuteConfig {
+	/** The selected time window for the mute */
+	selected_time_window: MuteConfigSelectedTimeWindow;
+	/** When the mute will end, null if time window is `FOREVER` */
+	end_time: string | null;
+}
+
+/** A Chanel Override for User Guild Settings */
+export interface UserGuildSettingsChannelOverride {
+	/** Whether the channel is muted */
+	muted: boolean;
+	/** The Mute Config (null if not muted) */
+	mute_config: MuteConfig | null;
+	/** The message notification level for the Channel (make sure to check for mutes before notifying) */
+	message_notifications: MessageNotificationLevel;
+	collapsed: boolean;
+	/** The ID of the Channel the Override is for */
+	channel_id: string;
+}
+
+/**
+ * Whether to supress or notify about highlights in a Guild
+ * @readonly
+ * @enum {number}
+ */
+export enum NotifyHighligts {
+	OFF = 0,
+	ON = 1
+}
+
+/** User Guild Settings for a Guild */
+export interface UserGuildSettingsItem {
+	/** The version of the settings (incremented by one on changes) */
+	version: number;
+	/** Whether to suppress role mentions */
+	suppress_roles: boolean;
+	/** Whether to suppress `@everyone` and `@here` mentions */
+	suppress_everyone: boolean;
+	/**
+	 * Whether to notify about highlights, such as messages, friend activity, events, and more
+	 * @see https://support.discord.com/hc/en-us/articles/5304469213079
+	 */
+	notify_highlights: NotifyHighligts;
+	/** Whether the guild is muted */
+	muted: boolean;
+	/** Whether to notify about New Events being created */
+	mute_scheduled_events: boolean;
+	/** The config for the mute (null if not muted) */
+	mute_config: MuteConfig | null;
+	/** Whether to push mobile notifications */
+	mobile_push: boolean;
+	/** The default message notification level */
+	message_notifications: MessageNotificationLevel;
+	/** Whether to hide muted channels */
+	hide_muted_channels: boolean;
+	/** The Guild ID */
+	guild_id: "926918030385098764";
+	flags: 0;
+	/** Overrides for channels that may change some settings for those specific channels */
+	channel_overrides: UserGuildSettingsChannelOverride[];
+}
+
+/** Specific Guild Settings for the Client User */
+export interface UserGuildSettingsObject {
+	/** The version of the settings (incremented by one on changes) */
+	version: number;
+	partial: boolean;
+	/** The Guilds and their settings */
+	entries: UserGuildSettingsItem[];
+}
+
+/** The Typing State of a User */
+export interface TypingState {
+	/** Whether the User is typing */
+	typing: boolean;
+	/** The timestamp of the change */
+	timestamp?: number;
+	/** The channel the User is typing in (undefined if not typing) */
+	channel?: ChannelType;
 }

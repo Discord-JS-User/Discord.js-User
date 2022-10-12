@@ -1,6 +1,6 @@
 import Session from "../Classes/ClientUser/Session";
 import Client from "../Client";
-import { Collection } from "@djs-user/utility";
+import { Collection } from "@djs-user/collection";
 import BaseManager from "../BaseClasses/BaseManager";
 
 /** A Manager for Client Sessions */

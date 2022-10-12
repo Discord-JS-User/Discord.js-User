@@ -57,4 +57,4 @@ And now you're set!
 
 Discord.js User has extra packages you can use, as shown below:
 
--   `@djs-user/utility` Contains utility features such as the `Collection` class, which is similar to an array but is much more optimized and contains async versions of many methods to improve the developer experience
+-   `@djs-user/collection` Contains the `Collection` class, which is similar to an array but is much more optimized and contains async versions of many methods to improve the developer experience

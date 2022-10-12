@@ -9,7 +9,7 @@ import GuildManager from "./Managers/GuildManager";
 import Logger from "./Logger";
 import ClientEventHandler from "./ClientEventHandler";
 import User from "./Classes/User";
-import { Collection } from "@djs-user/utility";
+import { Collection } from "@djs-user/collection";
 
 /** A Discord.js User Client */
 export default class Client extends (EventEmitter as new () => TypedEmitter<GatewayEvents>) {
@@ -90,7 +90,7 @@ export default class Client extends (EventEmitter as new () => TypedEmitter<Gate
 		this.options = options;
 		this.Logger = new Logger(this.options.debug);
 		this.removeAllListeners();
-		this.setMaxListeners(25);
+		this.setMaxListeners(0);
 		this.setupParsing();
 		this.ClientEventHandler = new ClientEventHandler(this);
 	}
@@ -274,13 +274,15 @@ export default class Client extends (EventEmitter as new () => TypedEmitter<Gate
 				case 0: // Dispatch
 					let eventData = data.d;
 
+					if (this.options.logEventNames) this.Logger.debug(data.t);
+
 					if (data.t.toUpperCase() !== "READY" && this.recievedReady === false) await this.awaitEvent("ready");
 
 					const handler = this.ClientEventHandler[data.t.toUpperCase()];
 
-					if (handler) eventData = await handler.bind(this.ClientEventHandler)(data);
+					if (handler) eventData = await handler.bind(this.ClientEventHandler)(data.d, data);
 
-					if (eventData === null) break;
+					if (eventData === "BREAK") break;
 					if (eventData === undefined) eventData = data.d;
 
 					if (data.t == "READY") {
@@ -546,4 +548,11 @@ export interface ClientOptions {
 	 * (ONLY WORKS WITH `debug` ENABLED)
 	 */
 	logHeartbeats?: boolean;
+	/**
+	 * Whether to log all incoming Dispatch event names
+	 * (ONLY WORKS WITH `debug` ENABLED)
+	 */
+	logEventNames?: boolean;
 }
+
+export { Client };

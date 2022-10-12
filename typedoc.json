@@ -1,0 +1,16 @@
+{
+	"$schema": "https://typedoc.org/schema.json",
+	"entryPoints": ["./src/**"],
+	"out": "docs",
+	"name": "Discord.js User",
+	"includeVersion": true,
+	"readme": "./README.md",
+	"commentStyle": "all",
+	"tsconfig": "./tsconfig.json",
+	"replaceText": {
+		"inCodeCommentText": true,
+		"inCodeCommentTags": true,
+		"inIncludedFiles": true,
+		"replacements": []
+	}
+}

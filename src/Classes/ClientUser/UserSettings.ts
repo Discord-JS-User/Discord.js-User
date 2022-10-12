@@ -21,6 +21,18 @@ export default class UserSettings {
 	}
 
 	/**
+	 * Update the data with partial updates
+	 * @param data The data (partial)
+	 */
+	update(data: Partial<UserSettingsObject>) {
+		this.data = {
+			...this.data,
+			...data
+		};
+		console.log(this.data);
+	}
+
+	/**
 	 * Fetch and update the data
 	 * @returns The updated data
 	 */

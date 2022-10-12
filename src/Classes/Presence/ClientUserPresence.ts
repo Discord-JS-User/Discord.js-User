@@ -1,7 +1,7 @@
-import { Collection } from "@djs-user/utility";
+import { Collection } from "@djs-user/collection";
 import Client from "../../Client";
 import { CustomStatus, PresenceData, PresenceStatus } from "../../Types";
-import PresenceActivity from "../Presence/PresenceActivity";
+import PresenceActivity from "./PresenceActivity";
 
 /** Presence for the Client User */
 export default class ClientUserPresence {

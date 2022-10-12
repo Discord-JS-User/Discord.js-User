@@ -5,7 +5,9 @@ import Guild from "./Classes/Guild";
 import { BanObject, ChannelType, GuildScheduledEvent } from "./Types";
 import Role from "./Classes/Role";
 import User from "./Classes/User";
-import { Collection } from "@djs-user/utility";
+import { Collection } from "@djs-user/collection";
+import UserSettings from "./Classes/ClientUser/UserSettings";
+import UserGuildSettings from "./Classes/ClientUser/UserGuildSettings";
 
 /** The Events that the Client can Send */
 type GatewayEvents = {
@@ -17,8 +19,14 @@ type GatewayEvents = {
 	heartbeatSend: () => void;
 	heartbeatAck: () => void;
 	ready: (readyData: object) => void;
+
+	user_settings_update: (settings: UserSettings) => void;
+	user_guild_settings_update: (settings: UserGuildSettings) => void;
+
 	sessions_replace: (sessions: Collection<Session>) => void;
-	presence_update: (member: GuildMember) => void;
+
+	typing_start: (user: User) => void;
+	presence_update: (user: User | GuildMember) => void;
 
 	channel_create: (channel: ChannelType) => void;
 	channel_update: (channel: ChannelType) => void;

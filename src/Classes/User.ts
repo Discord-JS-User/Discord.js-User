@@ -1,6 +1,7 @@
 import Client from "../Client";
 import { DiscordNitroLevel } from "../Types";
 import { fillClassValues } from "../utils";
+import UserPresence from "./Presence/UserPresence";
 
 /** A User */
 class User {
@@ -42,6 +43,8 @@ class User {
 	/** The User's Banner Color */
 	public banner_color?: string;
 	public avatar_decoration?: unknown;
+	/** The User Presence */
+	public presence: UserPresence;
 
 	/**
 	 * A User
@@ -51,6 +54,7 @@ class User {
 	constructor(client: Client, data: any) {
 		this.client = client;
 		this.setup(data);
+		this.presence = new UserPresence(this.client, this, {});
 	}
 
 	private setup(data: any) {
@@ -76,6 +80,11 @@ class User {
 		this.setup(data);
 
 		return data;
+	}
+
+	/** @private */
+	public _updatePresence(presence: any) {
+		this.presence = new UserPresence(this.client, this, presence);
 	}
 }
 

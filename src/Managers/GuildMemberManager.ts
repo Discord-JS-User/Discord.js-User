@@ -2,7 +2,7 @@ import Guild from "../Classes/Guild";
 import GuildMember from "../Classes/GuildMember";
 import User from "../Classes/User";
 import Client from "../Client";
-import { Collection } from "@djs-user/utility";
+import { Collection } from "@djs-user/collection";
 import BaseManager from "../BaseClasses/BaseManager";
 
 /** A Manager for Guild Members */
@@ -33,7 +33,7 @@ class GuildMemberManager extends BaseManager<GuildMember> {
 		if (!force) {
 			if (this.cache.find(i => i.id == id)) return this.cache.find(i => i.id == id);
 		}
-		return (await this.fetch([id]))[0];
+		return (await this.fetch([id])).get(id);
 	}
 
 	/**

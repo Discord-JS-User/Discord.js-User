@@ -1,4 +1,4 @@
-import { Collection } from "@djs-user/utility";
+import { Collection } from "@djs-user/collection";
 import Client from "../../Client";
 import { Integration } from "../../Types";
 import { fillClassValues } from "../../utils";

@@ -69,7 +69,9 @@ export async function apiFetch(token: string, path: string, options: APIFetchOpt
 	const requestData: RequestInit = {
 		method: options.method || "GET",
 		headers: {
-			Authorization: token
+			Authorization: token,
+			"Content-Type": "application/json",
+			...(options.headers || {})
 		}
 	};
 

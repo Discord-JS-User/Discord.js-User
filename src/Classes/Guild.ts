@@ -6,7 +6,7 @@ import ChannelManager from "../Managers/ChannelManager";
 import RoleManager from "../Managers/RoleManager";
 import { fillClassValues } from "../utils";
 import { BanManager } from "../Managers/MiniManagers";
-import { Collection } from "@djs-user/utility";
+import { Collection } from "@djs-user/collection";
 
 /** A Guild */
 class Guild {
