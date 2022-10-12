@@ -230,7 +230,7 @@ export default class Client extends (EventEmitter as new () => TypedEmitter<Gate
 			this.emit("open", openEvent);
 		};
 		this.socket.onclose = (closeEvent: WebSocket.CloseEvent) => {
-			this.Logger.warn(`Closed with Code: ${closeEvent.code} and Reason: ${closeEvent.reason}`);
+			this.Logger.error(`Closed with Code: ${closeEvent.code} and Reason: ${closeEvent.reason}`);
 			if (this.closed) return;
 			else {
 				this.closed = true;
@@ -264,11 +264,11 @@ export default class Client extends (EventEmitter as new () => TypedEmitter<Gate
 
 			const knownOPs = [0, 1, 7, 9, 10, 11];
 			if (!knownOPs.includes(data.op)) {
-				this.Logger.log("\n\n\nRECIEVED UNKOWN OP\n");
-				this.Logger.log(data);
-				this.Logger.log("\n\n\n");
+				this.Logger.warn("\n\n\nRECIEVED UNKOWN OP\n");
+				this.Logger.warn(data);
+				this.Logger.warn("\n\n\n");
 			} else if (data.op != 0 && data.op != 11) {
-				this.Logger.log(data.op);
+				if (this.options.logOpCodes) this.Logger.debug(data.op);
 			}
 
 			switch (data.op) {
@@ -401,15 +401,15 @@ export default class Client extends (EventEmitter as new () => TypedEmitter<Gate
 	 * @returns {Client} The Client
 	 */
 	public async heartbeat(): Promise<Client> {
-		if (this.options.logHeartbeats) this.Logger.log("Sending Heartbeat");
+		if (this.options.logHeartbeats) this.Logger.debug("Sending Heartbeat");
 		this.sendMessage({ op: 1, d: this.seq });
 		this.emit("heartbeatSend");
 		const recieved = await this.awaitEvent("heartbeatAck", 7500);
 		if (recieved) {
-			if (this.options.logHeartbeats) this.Logger.log("Recieved Heartbeat Ack");
+			if (this.options.logHeartbeats) this.Logger.debug("Recieved Heartbeat Ack");
 			this.emit("heartbeatAck");
 		} else {
-			this.Logger.log("Failed To Recieve Heartbeat Ack");
+			this.Logger.warn("Failed To Recieve Heartbeat Ack");
 			this.reconnect();
 		}
 		return this;
@@ -554,6 +554,11 @@ export interface ClientOptions {
 	 * (ONLY WORKS WITH `debug` ENABLED)
 	 */
 	logEventNames?: boolean;
+	/**
+	 * Whether to log all incoming OpCodes (other than `0 Dispatch` and `11 Heartbeat Ack`)
+	 * (ONLY WORKS WITH `debug` ENABLED)
+	 */
+	logOpCodes?: boolean;
 }
 
 export { Client };
