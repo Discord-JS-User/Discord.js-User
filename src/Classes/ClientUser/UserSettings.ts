@@ -29,7 +29,6 @@ export default class UserSettings {
 			...this.data,
 			...data
 		};
-		console.log(this.data);
 	}
 
 	/**
