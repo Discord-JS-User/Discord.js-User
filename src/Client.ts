@@ -91,7 +91,6 @@ export default class Client extends (EventEmitter as new () => TypedEmitter<Gate
 		this.Logger = new Logger(this.options.debug);
 		this.removeAllListeners();
 		this.setMaxListeners(0);
-		this.setupParsing();
 		this.ClientEventHandler = new ClientEventHandler(this);
 	}
 
@@ -201,6 +200,8 @@ export default class Client extends (EventEmitter as new () => TypedEmitter<Gate
 		options: ClientLoginOptions = {}
 	): Promise<Client> {
 		if (!token) throw new Error("NO TOKEN SPECIFIED");
+
+		this.setupParsing();
 
 		this.loginOptions = options;
 
