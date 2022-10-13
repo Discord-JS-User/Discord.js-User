@@ -2,7 +2,7 @@
 	"arrowParens": "avoid",
 	"printWidth": 1000000,
 	"tabWidth": 4,
-	"trailingComma": "none",
+	"trailingComma": "all",
 	"useTabs": true,
 	"vueIndentScriptAndStyle": true
 }
